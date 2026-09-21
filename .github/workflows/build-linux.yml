@@ -1,0 +1,86 @@
+name: build-linux
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'oss.py'
+      - 'tools/build-linux.sh'
+      - 'docs/PACKAGING.md'
+      - 'docs/LINUX_PORTABILITY.md'
+      - '.github/workflows/build-linux.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'oss.py'
+      - 'tools/build-linux.sh'
+      - 'docs/PACKAGING.md'
+      - 'docs/LINUX_PORTABILITY.md'
+      - '.github/workflows/build-linux.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install build tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pyinstaller
+          sudo apt-get update
+          sudo apt-get install -y binutils curl xz-utils
+
+      - name: Install runtime tools
+        run: |
+          mkdir -p tools-bin
+          curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o tools-bin/yt-dlp
+          chmod +x tools-bin/yt-dlp
+          curl -L https://github.com/denoland/deno/releases/latest/download/deno-x86_64-unknown-linux-gnu.zip -o tools-bin/deno.zip
+          python -m zipfile -e tools-bin/deno.zip tools-bin
+          chmod +x tools-bin/deno
+          sudo apt-get install -y ffmpeg
+          echo "$PWD/tools-bin" >> "$GITHUB_PATH"
+
+      - name: Unit tests
+        run: python -m unittest discover -s tests -v
+
+      - name: Build Linux package
+        run: tools/build-linux.sh
+
+      - name: Inspect package and GLIBC requirements
+        run: |
+          payload="$(find release -type d -name 'ytd-0.1.4-linux-x64' | sort | tail -n 1)"
+          test -n "$payload"
+          test -x "$payload/ytd"
+          test -x "$payload/install.sh"
+          test -x "$payload/uninstall.sh"
+          test -f "$payload/SHA256SUMS.txt"
+          "$payload/ytd" doctor
+          objdump -T "$payload/ytd" | grep -o 'GLIBC_[0-9][0-9.]*' | sort -Vu | tee "$payload/GLIBC_REQUIREMENTS.txt"
+          max_glibc="$(objdump -T "$payload/ytd" | grep -o 'GLIBC_[0-9][0-9.]*' | sort -Vu | tail -n 1)"
+          echo "Max GLIBC requirement: ${max_glibc:-unknown}"
+          if [ -z "$max_glibc" ]; then
+            echo "Could not detect GLIBC requirement" >&2
+            exit 1
+          fi
+          if printf '%s\nGLIBC_2.35\n' "$max_glibc" | sort -VC; then
+            echo "GLIBC requirement is <= GLIBC_2.35"
+          else
+            echo "GLIBC requirement is newer than GLIBC_2.35" >&2
+            exit 1
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ytd-0.1.4-linux-x64
+          path: release/dist-linux-x64-*/*.tar.gz
+          if-no-files-found: error

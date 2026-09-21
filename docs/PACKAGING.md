@@ -37,7 +37,7 @@ En esa variante el usuario descarga un paquete para su sistema, ejecuta el insta
 La estructura objetivo del paquete Linux genérico ya se genera desde `tools/build-linux.sh`:
 
 ```text
-ytd-0.1.0-linux-x64/
+ytd-<version>-linux-x64/
   ytd
   ytd.py                  # solo cuando PyInstaller no está disponible
   bin/
@@ -80,6 +80,13 @@ Los binarios autocontenidos deben generarse en cada sistema operativo de destino
 
 La razón es práctica: PyInstaller y los binarios nativos de FFmpeg/Deno no producen un ejecutable universal desde un solo sistema. Para releases reales conviene usar CI con una matriz por OS.
 
+
+## Build Linux de release
+
+El paquete Linux genérico publicable debe construirse en GitHub Actions con `ubuntu-22.04`, no en una distro rolling local. PyInstaller no vuelve portable la glibc: si se compila en CachyOS/Arch puede requerir una glibc más nueva que la disponible en Fedora, Ubuntu, Debian o Rocky.
+
+El workflow `build-linux.yml` inspecciona el binario con `objdump` y rechaza el build si requiere una glibc más nueva que `GLIBC_2.35`. Ver `docs/LINUX_PORTABILITY.md` para el procedimiento de prueba en Fedora y Ubuntu.
+
 ## Build Linux local
 
 Desde la carpeta `outputs/oss`:
@@ -97,7 +104,7 @@ En distros que aplican PEP 668, como Arch/CachyOS/Manjaro, no usar `pip --user` 
 
 Si PyInstaller está disponible, crea un ejecutable `ytd`. Si no está disponible, genera un paquete fuente con wrapper `ytd` que requiere Python 3. En ambos casos intenta copiar `yt-dlp`, `ffmpeg`, `ffprobe` y `deno` desde PATH hacia `bin/`.
 
-El script escribe en `release/dist-linux-x64-<fecha>/` para no pisar builds anteriores. Dentro de esa carpeta quedan el payload descomprimido y el archivo `ytd-0.1.0-linux-x64.tar.gz`. El payload incluye `install.sh`, `uninstall.sh`, `manifest.json` y `SHA256SUMS.txt`.
+El script escribe en `release/dist-linux-x64-<fecha>/` para no pisar builds anteriores. Dentro de esa carpeta quedan el payload descomprimido y el archivo `ytd-<version>-linux-x64.tar.gz`. El payload incluye `install.sh`, `uninstall.sh`, `manifest.json` y `SHA256SUMS.txt`.
 
 ## Checklist antes de publicar
 

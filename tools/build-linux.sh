@@ -2,7 +2,7 @@
 set -euo pipefail
 
 APP_NAME="ytd"
-APP_VERSION="0.1.3"
+APP_VERSION="0.1.4"
 TARGET="linux-x64"
 PACKAGE_NAME="${APP_NAME}-${APP_VERSION}-${TARGET}"
 
@@ -70,8 +70,8 @@ write_installers() {
 set -eu
 
 APP_NAME="ytd"
-APP_VERSION="0.1.3"
-PACKAGE_NAME="ytd-0.1.3-linux-x64"
+APP_VERSION="0.1.4"
+PACKAGE_NAME="ytd-0.1.4-linux-x64"
 SOURCE_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 INSTALL_ROOT="${OSS_INSTALL_ROOT:-$HOME/.local/share/oss}"
 INSTALL_DIR="$INSTALL_ROOT/$PACKAGE_NAME"
@@ -97,8 +97,8 @@ INSTALL
 set -eu
 
 APP_NAME="ytd"
-APP_VERSION="0.1.3"
-PACKAGE_NAME="ytd-0.1.3-linux-x64"
+APP_VERSION="0.1.4"
+PACKAGE_NAME="ytd-0.1.4-linux-x64"
 INSTALL_ROOT="${OSS_INSTALL_ROOT:-$HOME/.local/share/oss}"
 INSTALL_DIR="$INSTALL_ROOT/$PACKAGE_NAME"
 BIN_DIR="${OSS_BIN_DIR:-$HOME/.local/bin}"
