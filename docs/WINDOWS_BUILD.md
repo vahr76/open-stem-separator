@@ -85,3 +85,9 @@ uninstall.cmd
 - Build Windows packages on Windows.
 - Do not claim Linux-built Windows packages are validated.
 - Later we can add `.msi`, code signing, and SmartScreen-friendly distribution.
+
+## GitHub Actions build
+
+The repository includes `.github/workflows/build-windows.yml`. It builds the Windows zip on `windows-latest`, runs unit tests, verifies the payload, runs `ytd.exe doctor`, and uploads the zip as a workflow artifact. It does not publish a GitHub Release automatically.
+
+Run it manually from GitHub Actions with `workflow_dispatch`, or let it run on pushes that touch Windows build files.
