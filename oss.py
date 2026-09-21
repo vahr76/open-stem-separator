@@ -280,6 +280,26 @@ def executable(name):
     return str(bundled) if bundled.is_file() else shutil.which(name)
 
 
+def external_env():
+    env = os.environ.copy()
+    original_ld = env.get('LD_LIBRARY_PATH_ORIG')
+    if original_ld is not None:
+        env['LD_LIBRARY_PATH'] = original_ld
+    elif getattr(sys, 'frozen', False):
+        env.pop('LD_LIBRARY_PATH', None)
+    for key in ('PYTHONHOME', 'PYTHONPATH'):
+        env.pop(key, None)
+    for key in list(env):
+        if key.startswith('PYI_') or key.startswith('_PYI_'):
+            env.pop(key, None)
+    return env
+
+
+def run_external(args, **kwargs):
+    kwargs.setdefault('env', external_env())
+    return subprocess.run(args, **kwargs)
+
+
 def browser_available(browser):
     if browser == 'edge':
         candidates = ('msedge', 'microsoft-edge', 'microsoft-edge-stable')
@@ -457,7 +477,7 @@ def metadata_command(url):
 
 
 def fetch_metadata(url):
-    result = subprocess.run(metadata_command(url), check=False, capture_output=True, text=True, timeout=60)
+    result = run_external(metadata_command(url), check=False, capture_output=True, text=True, timeout=60)
     if result.returncode:
         return {'webpage_url': validate_url(url), 'title': 'Unknown', 'metadata_error': result.stderr.strip()}
     try:
@@ -562,8 +582,8 @@ def doctor():
             missing = True
             continue
         try:
-            result = subprocess.run([path, '-version' if name in ('ffmpeg', 'ffprobe') else '--version'],
-                                    capture_output=True, text=True, timeout=15)
+            result = run_external([path, '-version' if name in ('ffmpeg', 'ffprobe') else '--version'],
+                                  capture_output=True, text=True, timeout=15)
             lines = (result.stdout or result.stderr).splitlines()
             print(f'{"OK" if result.returncode == 0 else "ERROR"} {name}: {lines[0] if lines else path}')
             missing |= result.returncode != 0
@@ -581,7 +601,7 @@ def check_ytdlp_update():
         return 1
     print('Verificando nueva versión de yt-dlp...')
     try:
-        result = subprocess.run([engine, '-U'], check=False, capture_output=True, text=True, timeout=60)
+        result = run_external([engine, '-U'], check=False, capture_output=True, text=True, timeout=60)
     except (OSError, subprocess.TimeoutExpired) as exc:
         print(f'No pude comprobar actualizaciones de yt-dlp ahora. Sigo con la versión instalada. ({exc})')
         return 1
@@ -708,7 +728,7 @@ def run_all(commands):
 
 
 def run_process(args):
-    result = subprocess.run(args, check=False, capture_output=True, text=True)
+    result = run_external(args, check=False, capture_output=True, text=True)
     if result.stdout:
         print(result.stdout, end='')
     if result.stderr:

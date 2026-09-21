@@ -13,6 +13,30 @@ class CoreTests(unittest.TestCase):
         self.patch.start()
         self.addCleanup(self.patch.stop)
 
+
+    def test_external_env_cleans_pyinstaller_variables(self):
+        with patch.dict(oss.os.environ, {
+            'LD_LIBRARY_PATH': '/tmp/pyinstaller',
+            'LD_LIBRARY_PATH_ORIG': '/usr/lib',
+            'PYTHONHOME': '/bad/python',
+            'PYTHONPATH': '/bad/path',
+            'PYI_TEST': '1',
+            '_PYI_SPLASH_IPC': '2',
+            'KEEP_ME': 'ok',
+        }, clear=True):
+            env = oss.external_env()
+        self.assertEqual(env['LD_LIBRARY_PATH'], '/usr/lib')
+        self.assertEqual(env['KEEP_ME'], 'ok')
+        self.assertNotIn('PYTHONHOME', env)
+        self.assertNotIn('PYTHONPATH', env)
+        self.assertNotIn('PYI_TEST', env)
+        self.assertNotIn('_PYI_SPLASH_IPC', env)
+
+    def test_external_env_removes_pyinstaller_ld_without_original(self):
+        with patch.dict(oss.os.environ, {'LD_LIBRARY_PATH': '/tmp/pyinstaller'}, clear=True), patch('oss.sys.frozen', True, create=True):
+            env = oss.external_env()
+        self.assertNotIn('LD_LIBRARY_PATH', env)
+
     def test_original_preserves_source(self):
         cmd = oss.command('https://example.org/song')
         self.assertEqual(cmd[cmd.index('--format') + 1], 'bestaudio')
