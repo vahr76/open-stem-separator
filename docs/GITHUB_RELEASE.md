@@ -127,3 +127,7 @@ Before publishing binary packages:
 - include source links for bundled tools;
 - avoid implying that the app grants rights over third-party media;
 - include `COPYRIGHT_AND_USAGE.md` in the repo and release package.
+
+## Versioning
+
+Before creating a release, check `docs/VERSIONING.md` to decide whether the change is PATCH or MINOR during the pre-1.0 stage.

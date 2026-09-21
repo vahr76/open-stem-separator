@@ -34,3 +34,8 @@ El núcleo `ytd` registra descargas en `history.jsonl`. Esto queda como base par
 ## Comandos de comodidad
 
 `ytd config`, `ytd last` y `ytd open` acercan el núcleo a un flujo de usuario real: ver dónde se descarga, consultar la última descarga y abrir la carpeta del proyecto sin recordar rutas.
+
+
+## Versionado
+
+La regla de versionado referencial está en `docs/VERSIONING.md`. Mientras OSS esté en `0.x.y`, PATCH cubre QoL/fixes/docs/packaging menor y MINOR cubre funcionalidad nueva de producto o soporte de plataforma validado.

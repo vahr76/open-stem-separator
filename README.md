@@ -97,6 +97,10 @@ El instalador crea el comando `ytd`, instala en una carpeta de usuario y pregunt
 
 Para avanzar hacia un paquete autocontenido, ver `docs/PACKAGING.md`. En Linux hay un primer script de build en `tools/build-linux.sh`; genera un artefacto en `release/dist-linux-x64-<fecha>/` y no pisa builds anteriores. La matriz completa de distribución multiplataforma está en `docs/DISTRIBUTION_MATRIX.md`: Windows, macOS, Linux genérico, y futuros paquetes `.deb`, `.rpm`, SUSE/openSUSE, Arch y AppImage.
 
+## Versionado
+
+La política de versionado del proyecto está en `docs/VERSIONING.md`. Durante la etapa `0.x.y`, QoL/fixes/docs/packaging menor suben PATCH; funcionalidad nueva de producto sube MINOR.
+
 ## Validación realizada
 
 36 pruebas unitarias: argumentos, URL, normalización de enlaces, nombres seguros sin ID visible, metadata/proyectos, MP3 320 kbps, dependencias ausentes, playlists, recuperación automática con cookies, miniaturas, flujo interactivo, error del motor, cancelación, configuración y escritura en carpeta. Integración Linux con servidor HTTP local y audio sintético: descarga original, conversión FLAC y MP3 y decodificación de los tres resultados mediante FFmpeg. No se verificaron descargas reales de YouTube ni paquetes en Windows/macOS.
