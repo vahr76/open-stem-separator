@@ -2,6 +2,10 @@
 
 Primer prototipo del núcleo de descarga. Nombre provisional. El diagrama BASS es una referencia de producto; sus motores y afirmaciones no se consideran decisiones definitivas.
 
+## Manual de comandos
+
+La referencia completa de comandos y flags está en `docs/CLI_REFERENCE.md`.
+
 ## Ejecutar el prototipo
 
 Requiere Python 3.10+ y yt-dlp. FFmpeg y ffprobe para convertir o combinar pistas; Deno y EJS compatible para soporte completo de YouTube. Busca ejecutables primero en `bin/` junto a OSS y después en PATH. No instala ni modifica el proyecto BASS existente.
