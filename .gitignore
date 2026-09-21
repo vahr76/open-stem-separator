@@ -12,3 +12,9 @@ release/dist-*/
 Thumbs.db
 .env
 .env.*
+
+# Local generated artifacts that should not be committed from this package root
+/outputs/
+
+# Enable GitHub Actions later with a token that has workflow permission
+/.github/workflows/
