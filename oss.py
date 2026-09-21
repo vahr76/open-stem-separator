@@ -47,10 +47,28 @@ def config_dir():
 
 
 CONFIG_PATH = config_dir() / 'config.json'
+_ACTIVE_CONFIG_PATH = None
+
+
+def active_config_path():
+    if _ACTIVE_CONFIG_PATH is not None:
+        return _ACTIVE_CONFIG_PATH
+    explicit = os.environ.get('OSS_CONFIG')
+    if explicit:
+        return Path(explicit).expanduser()
+    directory = os.environ.get('OSS_CONFIG_DIR')
+    if directory:
+        return Path(directory).expanduser() / 'config.json'
+    return CONFIG_PATH
+
+
+def set_config_path(path):
+    global _ACTIVE_CONFIG_PATH
+    _ACTIVE_CONFIG_PATH = Path(path).expanduser() if path else None
 
 
 def load_config(path=None):
-    path = path or CONFIG_PATH
+    path = path or active_config_path()
     try:
         with path.open('r', encoding='utf-8') as handle:
             data = json.load(handle)
@@ -62,7 +80,7 @@ def load_config(path=None):
 
 
 def save_config(values, path=None):
-    path = path or CONFIG_PATH
+    path = path or active_config_path()
     current = load_config(path)
     current.update({key: str(value) for key, value in values.items() if value is not None})
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -472,7 +490,7 @@ def configure(downloads_dir, install_mode=None, thumbnail_mode=None):
             raise ValueError('Modo de thumbnail desconocido.')
         values['thumbnail_mode'] = thumbnail_mode
     save_config(values)
-    print(f'Configuración guardada en {CONFIG_PATH}')
+    print(f'Configuración guardada en {active_config_path()}')
     print(f'Descargas: {destination}')
     return 0
 
@@ -544,8 +562,36 @@ def with_browser_cookies(args, browser):
     return args[:insertion] + ['--cookies-from-browser', browser] + args[insertion:]
 
 
+def parse_global_options(argv):
+    argv = list(argv)
+    config_path = None
+    cleaned = []
+    index = 0
+    while index < len(argv):
+        item = argv[index]
+        if item == '--config':
+            if index + 1 >= len(argv):
+                raise ValueError('--config necesita una ruta.')
+            config_path = argv[index + 1]
+            index += 2
+            continue
+        if item.startswith('--config='):
+            config_path = item.split('=', 1)[1]
+            index += 1
+            continue
+        cleaned.append(item)
+        index += 1
+    return cleaned, config_path
+
+
 def main(argv=None):
-    argv = list(sys.argv[1:] if argv is None else argv)
+    try:
+        argv, config_path = parse_global_options(sys.argv[1:] if argv is None else argv)
+        if config_path:
+            set_config_path(config_path)
+    except ValueError as exc:
+        print(f'OSS: {exc}', file=sys.stderr)
+        return 1
     if argv and argv[0] in PROFILES and len(argv) >= 2:
         profile = argv[0]
         url = argv[1]
@@ -581,6 +627,7 @@ def main(argv=None):
     elif argv and argv[0] not in ('doctor', 'configure', 'download', 'formats', '-h', '--help') and is_url(argv[0]):
         argv = ['download'] + argv
     parser = argparse.ArgumentParser(description='OSS — Open Stem Separator: núcleo de descarga')
+    parser.add_argument('--config', help='Ruta de configuración alternativa para pruebas o instalaciones aisladas')
     sub = parser.add_subparsers(dest='action')
     sub.add_parser('doctor', help='Comprobar motores')
     config_parser = sub.add_parser('configure', help='Guardar carpeta de descargas por usuario')
@@ -596,6 +643,8 @@ def main(argv=None):
         p.add_argument('--thumbnails', choices=THUMBNAIL_MODES, help='none, write o embed')
         p.add_argument('--dry-run', action='store_true', help='Mostrar argumentos sin descargar')
     ns = parser.parse_args(argv)
+    if getattr(ns, 'config', None):
+        set_config_path(ns.config)
     try:
         if ns.action is None:
             if not sys.stdin.isatty():

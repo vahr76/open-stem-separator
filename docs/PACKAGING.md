@@ -111,3 +111,12 @@ El script escribe en `release/dist-linux-x64-<fecha>/` para no pisar builds ante
 8. Guardar hashes SHA-256 de cada binario incluido.
 9. Incluir textos de licencia requeridos por cada binario distribuido.
 10. Probar instalación limpia en Windows, macOS y Linux con usuario sin permisos de administrador.
+
+Para pruebas temporales del paquete, no usar la configuración real del usuario:
+
+```sh
+ytd --config /tmp/oss-test/config.json configure --downloads-dir /tmp/oss-test/downloads
+ytd --config /tmp/oss-test/config.json doctor
+```
+
+También se puede usar `OSS_CONFIG_DIR=/tmp/oss-test/config` para aislar toda la carpeta de configuración.

@@ -233,6 +233,22 @@ class CoreTests(unittest.TestCase):
                 self.assertEqual(oss.load_config(config)['downloads_dir'], str(downloads))
                 self.assertEqual(oss.load_config(config)['install_mode'], 'online')
 
+
+    def test_global_config_flag_is_used(self):
+        with tempfile.TemporaryDirectory() as directory:
+            config = Path(directory) / 'isolated.json'
+            downloads = Path(directory) / 'Downloads'
+            self.assertEqual(oss.main(['--config', str(config), 'configure', '--downloads-dir', str(downloads)]), 0)
+            self.assertEqual(oss.load_config(config)['downloads_dir'], str(downloads))
+
+    def test_config_env_dir_is_used(self):
+        with tempfile.TemporaryDirectory() as directory:
+            config_dir = Path(directory) / 'cfg'
+            downloads = Path(directory) / 'Downloads'
+            with patch.dict('os.environ', {'OSS_CONFIG_DIR': str(config_dir)}), patch.object(oss, '_ACTIVE_CONFIG_PATH', None):
+                self.assertEqual(oss.configure(downloads), 0)
+                self.assertEqual(oss.load_config(config_dir / 'config.json')['downloads_dir'], str(downloads))
+
     def test_command_uses_configured_downloads_dir(self):
         with tempfile.TemporaryDirectory() as directory:
             config = Path(directory) / 'config.json'
