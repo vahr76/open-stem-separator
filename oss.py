@@ -444,8 +444,19 @@ def choose_profile(kind='audio'):
     return profiles[int(choice) - 1]
 
 
+def console_supports_unicode():
+    encoding = getattr(sys.stdout, 'encoding', None) or ''
+    return encoding.lower().replace('-', '') in ('utf8', 'utf')
+
+
+def banner_text():
+    if console_supports_unicode():
+        return '\n╔══════════════════════════════════════╗\n║ OSS · Open Stem Separator           ║\n║ Núcleo de descarga · versión 0.1     ║\n╚══════════════════════════════════════╝'
+    return '\n========================================\nOSS - Open Stem Separator\nNucleo de descarga - version 0.1\n========================================'
+
+
 def menu():
-    print('\n╔══════════════════════════════════════╗\n║ OSS · Open Stem Separator           ║\n║ Núcleo de descarga · versión 0.1     ║\n╚══════════════════════════════════════╝')
+    print(banner_text())
     check_ytdlp_update()
     print('')
     url = input('URL (o doctor/salir): ').strip()

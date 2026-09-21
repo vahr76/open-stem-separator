@@ -4,6 +4,9 @@ from pathlib import Path
 from unittest.mock import patch
 import oss
 
+def same_path(left, right):
+    return Path(left).resolve() == Path(right).resolve()
+
 class CoreTests(unittest.TestCase):
     def setUp(self):
         self.patch = patch('oss.executable', side_effect=lambda name: '/bundle/bin/' + name)
@@ -53,7 +56,7 @@ class CoreTests(unittest.TestCase):
                 'duration': 123,
                 'id': 'abc',
             })
-            self.assertEqual(project, Path(directory) / 'Artist' / 'Track')
+            self.assertTrue(same_path(project, Path(directory) / 'Artist' / 'Track'))
             metadata = (project / 'metadata.json').read_text(encoding='utf-8')
             self.assertIn('"artist_guess": "Artist"', metadata)
             self.assertIn('"track_guess": "Track"', metadata)
@@ -82,8 +85,8 @@ class CoreTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as directory, patch('oss.default_downloads', return_value=Path(directory)), patch('oss.fetch_metadata', return_value={'title': 'Artist - Song'}), patch('oss.run', side_effect=fake_run):
             self.assertEqual(oss.main(['both', 'https://example.org/song']), 0)
-        self.assertIn(str(Path(directory) / 'Artist' / 'Song'), calls[0])
-        self.assertIn(str(Path(directory) / 'Artist' / 'Song'), calls[1])
+        self.assertTrue(any(same_path(value, Path(directory) / 'Artist' / 'Song') for value in calls[0]))
+        self.assertTrue(any(same_path(value, Path(directory) / 'Artist' / 'Song') for value in calls[1]))
         self.assertEqual(calls[0][calls[0].index('--format') + 1], 'bestvideo+bestaudio/best[vcodec!=none][acodec!=none]')
         self.assertEqual(calls[1][calls[1].index('--format') + 1], 'bestaudio')
         self.assertEqual(calls[0][calls[0].index('--output') + 1], '%(title).160B - video.%(ext)s')
@@ -118,7 +121,7 @@ class CoreTests(unittest.TestCase):
             cookies = Path(directory) / 'cookies.txt'
             cookies.write_text('# Netscape HTTP Cookie File\n', encoding='utf-8')
             cmd = oss.command('https://example.org/song', cookies_file=cookies)
-            self.assertEqual(cmd[cmd.index('--cookies') + 1], str(cookies))
+            self.assertTrue(same_path(cmd[cmd.index('--cookies') + 1], cookies))
 
     def test_cookie_file_must_exist(self):
         with self.assertRaisesRegex(ValueError, 'cookies'):
@@ -230,7 +233,7 @@ class CoreTests(unittest.TestCase):
             downloads = Path(directory) / 'Downloads'
             with patch.object(oss, 'CONFIG_PATH', config):
                 self.assertEqual(oss.configure(downloads, 'online'), 0)
-                self.assertEqual(oss.load_config(config)['downloads_dir'], str(downloads))
+                self.assertTrue(same_path(oss.load_config(config)['downloads_dir'], downloads))
                 self.assertEqual(oss.load_config(config)['install_mode'], 'online')
 
 
@@ -239,7 +242,7 @@ class CoreTests(unittest.TestCase):
             config = Path(directory) / 'isolated.json'
             downloads = Path(directory) / 'Downloads'
             self.assertEqual(oss.main(['--config', str(config), 'configure', '--downloads-dir', str(downloads)]), 0)
-            self.assertEqual(oss.load_config(config)['downloads_dir'], str(downloads))
+            self.assertTrue(same_path(oss.load_config(config)['downloads_dir'], downloads))
 
     def test_config_env_dir_is_used(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -247,7 +250,7 @@ class CoreTests(unittest.TestCase):
             downloads = Path(directory) / 'Downloads'
             with patch.dict('os.environ', {'OSS_CONFIG_DIR': str(config_dir)}), patch.object(oss, '_ACTIVE_CONFIG_PATH', None):
                 self.assertEqual(oss.configure(downloads), 0)
-                self.assertEqual(oss.load_config(config_dir / 'config.json')['downloads_dir'], str(downloads))
+                self.assertTrue(same_path(oss.load_config(config_dir / 'config.json')['downloads_dir'], downloads))
 
     def test_command_uses_configured_downloads_dir(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -256,7 +259,7 @@ class CoreTests(unittest.TestCase):
             oss.save_config({'downloads_dir': downloads}, config)
             with patch.object(oss, 'CONFIG_PATH', config):
                 cmd = oss.command('https://example.org/song')
-                self.assertEqual(cmd[cmd.index('--paths') + 1], str(downloads))
+                self.assertTrue(same_path(cmd[cmd.index('--paths') + 1], downloads))
 
     def test_unwritable_output(self):
         with patch('oss.tempfile.TemporaryFile', side_effect=PermissionError('denied')):
