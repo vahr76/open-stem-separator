@@ -1,0 +1,77 @@
+name: build-windows
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'oss.py'
+      - 'tools/build-windows.ps1'
+      - 'docs/WINDOWS_BUILD.md'
+      - '.github/workflows/build-windows.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'oss.py'
+      - 'tools/build-windows.ps1'
+      - 'docs/WINDOWS_BUILD.md'
+      - '.github/workflows/build-windows.yml'
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python build tools
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pyinstaller
+
+      - name: Install runtime tools
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path tools-bin | Out-Null
+          Invoke-WebRequest -Uri "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe" -OutFile "tools-bin\yt-dlp.exe"
+          Invoke-WebRequest -Uri "https://github.com/denoland/deno/releases/latest/download/deno-x86_64-pc-windows-msvc.zip" -OutFile "tools-bin\deno.zip"
+          Expand-Archive -Path "tools-bin\deno.zip" -DestinationPath "tools-bin" -Force
+          Invoke-WebRequest -Uri "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip" -OutFile "tools-bin\ffmpeg.zip"
+          Expand-Archive -Path "tools-bin\ffmpeg.zip" -DestinationPath "tools-bin\ffmpeg" -Force
+          $ffmpegRoot = Get-ChildItem "tools-bin\ffmpeg" -Directory | Select-Object -First 1
+          Copy-Item "$($ffmpegRoot.FullName)\bin\ffmpeg.exe" "tools-bin\ffmpeg.exe" -Force
+          Copy-Item "$($ffmpegRoot.FullName)\bin\ffprobe.exe" "tools-bin\ffprobe.exe" -Force
+          "$PWD\tools-bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      - name: Unit tests
+        shell: pwsh
+        run: python -m unittest discover -s tests -v
+
+      - name: Build Windows package
+        shell: pwsh
+        run: .\tools\build-windows.ps1
+
+      - name: Inspect package
+        shell: pwsh
+        run: |
+          $payload = Get-ChildItem release -Recurse -Directory -Filter ytd-0.1.0-windows-x64 | Sort-Object FullName | Select-Object -Last 1
+          if (-not $payload) { throw "Payload not found" }
+          Get-ChildItem $payload.FullName -Recurse | Select-Object FullName, Length
+          if (-not (Test-Path (Join-Path $payload.FullName "install.cmd"))) { throw "install.cmd missing" }
+          if (-not (Test-Path (Join-Path $payload.FullName "uninstall.cmd"))) { throw "uninstall.cmd missing" }
+          if (-not (Test-Path (Join-Path $payload.FullName "ytd.exe"))) { throw "ytd.exe missing" }
+          if (-not (Test-Path (Join-Path $payload.FullName "SHA256SUMS.txt"))) { throw "SHA256SUMS.txt missing" }
+          & (Join-Path $payload.FullName "ytd.exe") doctor
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ytd-0.1.0-windows-x64
+          path: release/dist-windows-x64-*/*.zip
+          if-no-files-found: error
