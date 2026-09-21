@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from datetime import datetime, timezone
 from urllib.parse import urlsplit
 
 ROOT = Path(sys.executable).resolve().parent if getattr(sys, 'frozen', False) else Path(__file__).resolve().parent
@@ -97,6 +98,88 @@ def default_downloads():
 def configured(name, fallback=None):
     value = load_config().get(name)
     return value if value not in ('', None) else fallback
+
+
+def state_dir():
+    if _ACTIVE_CONFIG_PATH is not None or os.environ.get('OSS_CONFIG') or os.environ.get('OSS_CONFIG_DIR'):
+        return active_config_path().parent
+    return config_dir()
+
+
+def history_path():
+    configured_path = configured('history_file')
+    if configured_path:
+        return Path(configured_path).expanduser()
+    return state_dir() / 'history.jsonl'
+
+
+def append_history(entry, path=None):
+    path = Path(path).expanduser() if path else history_path()
+    data = dict(entry)
+    data.setdefault('timestamp', datetime.now(timezone.utc).isoformat())
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open('a', encoding='utf-8') as handle:
+            json.dump(data, handle, ensure_ascii=False, sort_keys=True)
+            handle.write('\n')
+    except OSError as exc:
+        print(f'OSS: no pude escribir historial en {path}. ({exc})', file=sys.stderr)
+
+
+def read_history(limit=None, path=None):
+    path = Path(path).expanduser() if path else history_path()
+    try:
+        lines = path.read_text(encoding='utf-8').splitlines()
+    except FileNotFoundError:
+        return []
+    rows = []
+    for line in lines:
+        if not line.strip():
+            continue
+        try:
+            rows.append(json.loads(line))
+        except json.JSONDecodeError:
+            rows.append({'status': 'invalid', 'raw': line})
+    return rows[-limit:] if limit else rows
+
+
+def history_entry(url, profile, project_dir=None, status='ok', code=0, kind=None):
+    entry = {
+        'url': validate_url(url),
+        'profile': profile,
+        'status': status,
+        'code': code,
+    }
+    if kind:
+        entry['kind'] = kind
+    if project_dir is not None:
+        project = Path(project_dir)
+        entry['project_dir'] = str(project)
+        metadata_file = project / 'metadata.json'
+        metadata = load_config(metadata_file)
+        if metadata:
+            entry['artist'] = metadata.get('artist_guess')
+            entry['track'] = metadata.get('track_guess')
+            entry['title'] = metadata.get('title')
+            entry['source_id'] = metadata.get('id')
+    return entry
+
+
+def run_tracked(url, profile, project_dir, label=None, kind=None):
+    code = run(command(url, profile, output=project_dir, label=label))
+    append_history(history_entry(url, profile, project_dir, 'ok' if code == 0 else 'error', code, kind))
+    return code
+
+
+def run_many_tracked(entries):
+    final_code = 0
+    for item in entries:
+        code = run(command(item['url'], item['profile'], output=item['project_dir'], label=item.get('label')))
+        append_history(history_entry(item['url'], item['profile'], item['project_dir'], 'ok' if code == 0 else 'error', code, item.get('kind')))
+        if code:
+            final_code = code
+            break
+    return final_code
 
 
 def executable(name):
@@ -471,10 +554,12 @@ def menu():
     print(f'Proyecto: {project_dir}')
     if kind == 'both':
         audio_profile = choose_profile('both')
-        return run_all([command(url, 'video', output=project_dir, label='video'),
-                        command(url, audio_profile, output=project_dir, label='audio')])
+        return run_many_tracked([
+            {'url': url, 'profile': 'video', 'project_dir': project_dir, 'label': 'video', 'kind': 'both-video'},
+            {'url': url, 'profile': audio_profile, 'project_dir': project_dir, 'label': 'audio', 'kind': 'both-audio'},
+        ])
     profile = choose_profile(kind)
-    return run(command(url, profile, output=project_dir))
+    return run_tracked(url, profile, project_dir)
 
 
 def prepare_output(args):
@@ -611,11 +696,12 @@ def main(argv=None):
             project_dir = create_project(url)
             args = command(url, profile, output=project_dir)
             if '--dry-run' in rest:
-                import json
                 print(json.dumps(args, ensure_ascii=False, indent=2))
                 return 0
             print(f'Proyecto: {project_dir}')
-            return run(args)
+            code = run(args)
+            append_history(history_entry(url, profile, project_dir, 'ok' if code == 0 else 'error', code, 'shortcut'))
+            return code
         except (ValueError, OSError) as exc:
             print(f'OSS: {exc}', file=sys.stderr)
             return 1
@@ -627,11 +713,13 @@ def main(argv=None):
             commands = [command(url, 'video', output=project_dir, label='video'),
                         command(url, 'original', output=project_dir, label='audio')]
             if '--dry-run' in rest:
-                import json
                 print(json.dumps(commands, ensure_ascii=False, indent=2))
                 return 0
             print(f'Proyecto: {project_dir}')
-            return run_all(commands)
+            return run_many_tracked([
+                {'url': url, 'profile': 'video', 'project_dir': project_dir, 'label': 'video', 'kind': 'both-video'},
+                {'url': url, 'profile': 'original', 'project_dir': project_dir, 'label': 'audio', 'kind': 'both-audio'},
+            ])
         except (ValueError, OSError) as exc:
             print(f'OSS: {exc}', file=sys.stderr)
             return 1
@@ -641,6 +729,8 @@ def main(argv=None):
     parser.add_argument('--config', help='Ruta de configuración alternativa para pruebas o instalaciones aisladas')
     sub = parser.add_subparsers(dest='action')
     sub.add_parser('doctor', help='Comprobar motores')
+    history_parser = sub.add_parser('history', help='Mostrar historial local de descargas')
+    history_parser.add_argument('--limit', type=int, default=20)
     config_parser = sub.add_parser('configure', help='Guardar carpeta de descargas por usuario')
     config_parser.add_argument('--downloads-dir', type=Path, required=True)
     config_parser.add_argument('--install-mode', choices=('offline', 'online'))
@@ -664,15 +754,21 @@ def main(argv=None):
             return menu()
         if ns.action == 'doctor':
             return doctor()
+        if ns.action == 'history':
+            for row in read_history(ns.limit):
+                print(json.dumps(row, ensure_ascii=False))
+            return 0
         if ns.action == 'configure':
             return configure(ns.downloads_dir, ns.install_mode, ns.thumbnails)
         args = command(ns.url, ns.profile, ns.output, ns.action == 'formats', ns.playlist,
                        thumbnail_mode=ns.thumbnails)
         if ns.dry_run:
-            import json
             print(json.dumps(args, ensure_ascii=False, indent=2))
             return 0
-        return run(args)
+        code = run(args)
+        if ns.action == 'download':
+            append_history(history_entry(ns.url, ns.profile, ns.output, 'ok' if code == 0 else 'error', code, 'download'))
+        return code
     except (ValueError, OSError) as exc:
         print(f'OSS: {exc}', file=sys.stderr)
         return 1

@@ -24,3 +24,8 @@ La separación no recupera pistas maestras perfectas. Los modelos, pesos y motor
 ## Distribución multiplataforma
 
 La primera etapa no se considera cerrada hasta que `ytd` tenga una estrategia clara para Windows, macOS y Linux. Linux debe incluir paquete genérico `.tar.gz` y luego paquetes por familia: `.deb`, `.rpm`, SUSE/openSUSE, Arch y AppImage. Ver `docs/DISTRIBUTION_MATRIX.md`.
+
+
+## Historial local
+
+El núcleo `ytd` registra descargas en `history.jsonl`. Esto queda como base para UI web, proyectos, reintentos, evitar duplicados y futuras etapas de separación de stems.

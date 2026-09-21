@@ -83,7 +83,7 @@ class CoreTests(unittest.TestCase):
             calls.append(args)
             return 0
 
-        with tempfile.TemporaryDirectory() as directory, patch('oss.default_downloads', return_value=Path(directory)), patch('oss.fetch_metadata', return_value={'title': 'Artist - Song'}), patch('oss.run', side_effect=fake_run):
+        with tempfile.TemporaryDirectory() as directory, patch('oss.default_downloads', return_value=Path(directory)), patch('oss.fetch_metadata', return_value={'title': 'Artist - Song'}), patch('oss.run', side_effect=fake_run), patch('oss.history_path', return_value=Path(directory) / 'history.jsonl'):
             self.assertEqual(oss.main(['both', 'https://example.org/song']), 0)
         self.assertTrue(any(same_path(value, Path(directory) / 'Artist' / 'Song') for value in calls[0]))
         self.assertTrue(any(same_path(value, Path(directory) / 'Artist' / 'Song') for value in calls[1]))
@@ -192,15 +192,15 @@ class CoreTests(unittest.TestCase):
 
     def test_menu_both_mp4(self):
         answers = iter(('https://example.org/song', '3', '2'))
-        with tempfile.TemporaryDirectory() as directory, patch('builtins.input', side_effect=lambda prompt='': next(answers)), patch('oss.default_downloads', return_value=Path(directory)), patch('oss.fetch_metadata', return_value={'title': 'Artist - Song'}), patch('oss.check_ytdlp_update'), patch('oss.run_all') as run:
+        with tempfile.TemporaryDirectory() as directory, patch('builtins.input', side_effect=lambda prompt='': next(answers)), patch('oss.default_downloads', return_value=Path(directory)), patch('oss.fetch_metadata', return_value={'title': 'Artist - Song'}), patch('oss.check_ytdlp_update'), patch('oss.run') as run, patch('oss.history_path', return_value=Path(directory) / 'history.jsonl'):
             run.return_value = 0
             self.assertEqual(oss.menu(), 0)
-            commands = run.call_args.args[0]
+            commands = [call.args[0] for call in run.call_args_list]
             self.assertEqual(commands[0][commands[0].index('--format') + 1], 'bestvideo+bestaudio/best[vcodec!=none][acodec!=none]')
             self.assertEqual(commands[1][commands[1].index('--audio-format') + 1], 'wav')
 
     def test_direct_url_shortcut(self):
-        with patch('oss.run') as run:
+        with tempfile.TemporaryDirectory() as directory, patch('oss.run') as run, patch('oss.history_path', return_value=Path(directory) / 'history.jsonl'):
             run.return_value = 0
             self.assertEqual(oss.main(['https://example.org/song']), 0)
             cmd = run.call_args.args[0]
@@ -260,6 +260,32 @@ class CoreTests(unittest.TestCase):
             with patch.object(oss, 'CONFIG_PATH', config):
                 cmd = oss.command('https://example.org/song')
                 self.assertTrue(same_path(cmd[cmd.index('--paths') + 1], downloads))
+
+
+    def test_history_writes_jsonl(self):
+        with tempfile.TemporaryDirectory() as directory:
+            history = Path(directory) / 'history.jsonl'
+            oss.append_history({'url': 'https://example.org/song', 'profile': 'flac', 'status': 'ok'}, history)
+            rows = oss.read_history(path=history)
+            self.assertEqual(len(rows), 1)
+            self.assertEqual(rows[0]['profile'], 'flac')
+            self.assertEqual(rows[0]['status'], 'ok')
+            self.assertIn('timestamp', rows[0])
+
+    def test_shortcut_records_history(self):
+        with tempfile.TemporaryDirectory() as directory, patch('oss.default_downloads', return_value=Path(directory) / 'downloads'), patch('oss.fetch_metadata', return_value={'title': 'Artist - Song'}), patch('oss.run', return_value=0), patch('oss.history_path', return_value=Path(directory) / 'history.jsonl'):
+            self.assertEqual(oss.main(['flac', 'https://example.org/song']), 0)
+            rows = oss.read_history(path=Path(directory) / 'history.jsonl')
+            self.assertEqual(rows[-1]['profile'], 'flac')
+            self.assertEqual(rows[-1]['status'], 'ok')
+            self.assertEqual(rows[-1]['artist'], 'Artist')
+            self.assertEqual(rows[-1]['track'], 'Song')
+
+    def test_history_command_prints_rows(self):
+        with tempfile.TemporaryDirectory() as directory, patch('oss.history_path', return_value=Path(directory) / 'history.jsonl'), patch('builtins.print') as printer:
+            oss.append_history({'url': 'https://example.org/song', 'profile': 'mp3', 'status': 'ok'})
+            self.assertEqual(oss.main(['history', '--limit', '1']), 0)
+            self.assertIn('mp3', printer.call_args.args[0])
 
     def test_unwritable_output(self):
         with patch('oss.tempfile.TemporaryFile', side_effect=PermissionError('denied')):

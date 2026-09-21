@@ -16,6 +16,7 @@ ytd video 'URL'
 ytd both 'URL'
 ytd mp3 'URL'
 ytd doctor
+ytd history
 ```
 
 El instalador crea el comando `ytd` en una carpeta de comandos de usuario. En Linux/macOS el valor predeterminado es `~/.local/bin`; en Windows se crea `ytd.cmd`.
@@ -39,6 +40,8 @@ La carpeta predeterminada es Music/OSS/downloads dentro del directorio personal.
 Las URLs pegadas como enlace Markdown, por ejemplo `[https://...](https://...)`, se normalizan antes de pasarlas a yt-dlp. Los nombres de archivo usan modo restringido para evitar comillas, caracteres Unicode raros o símbolos incómodos en terminales y scripts. El ID del video no se agrega al nombre visible; cuando se descarga video + audio separados, OSS agrega los sufijos ` - video` y ` - audio`.
 
 Cada descarga crea una carpeta de proyecto. OSS intenta detectar `artista/tema` desde metadata real de yt-dlp o desde títulos con forma `Artista - Tema`. Si no hay confianza suficiente, guarda en `_unsorted/Titulo`. También escribe `metadata.json` con URL, título, uploader, duración, ID y el origen/confianza de la detección.
+
+Además mantiene un historial local en `history.jsonl` junto a la configuración de OSS. `ytd history` muestra las últimas entradas. Cada línea registra fecha, URL, perfil, estado, código de salida, carpeta de proyecto y datos detectados como artista/tema cuando existen. En pruebas se puede aislar con `--config /tmp/oss-test/config.json` u `OSS_CONFIG_DIR=/tmp/oss-test/config`.
 
 ```text
 downloads/
