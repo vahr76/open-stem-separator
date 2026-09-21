@@ -80,7 +80,7 @@ El instalador crea el comando `ytd`, instala en una carpeta de usuario y pregunt
 
 **Estado real:** se entrega código fuente funcional y scripts de instalación iniciales. Todavía no es un paquete autocontenido terminado. Faltan bootstrap nativo sin Python, dependencias offline completas, versiones y hashes definitivos, paquetes por OS/arquitectura, avisos de terceros y validación en Windows/macOS. No se declara licencia de distribución definitiva en este prototipo.
 
-Para avanzar hacia un paquete autocontenido, ver `docs/PACKAGING.md`. En Linux hay un primer script de build en `tools/build-linux.sh`; genera un artefacto en `release/dist-linux-x64-<fecha>/` y no pisa builds anteriores.
+Para avanzar hacia un paquete autocontenido, ver `docs/PACKAGING.md`. En Linux hay un primer script de build en `tools/build-linux.sh`; genera un artefacto en `release/dist-linux-x64-<fecha>/` y no pisa builds anteriores. La matriz completa de distribución multiplataforma está en `docs/DISTRIBUTION_MATRIX.md`: Windows, macOS, Linux genérico, y futuros paquetes `.deb`, `.rpm`, SUSE/openSUSE, Arch y AppImage.
 
 ## Validación realizada
 

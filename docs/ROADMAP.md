@@ -20,3 +20,7 @@ La reproducción tendrá prioridad dentro de OSS: suspender o limitar la inferen
 ## Límites de producto
 
 La separación no recupera pistas maestras perfectas. Los modelos, pesos y motores se evaluarán por calidad, recursos y condiciones de distribución por separado. No tomar la afirmación del diagrama sobre el “mejor modelo actual” como hecho verificado. La exportación debe declarar formato, sample rate y profundidad; evitar normalización destructiva silenciosa y clipping de la mezcla.
+
+## Distribución multiplataforma
+
+La primera etapa no se considera cerrada hasta que `ytd` tenga una estrategia clara para Windows, macOS y Linux. Linux debe incluir paquete genérico `.tar.gz` y luego paquetes por familia: `.deb`, `.rpm`, SUSE/openSUSE, Arch y AppImage. Ver `docs/DISTRIBUTION_MATRIX.md`.
