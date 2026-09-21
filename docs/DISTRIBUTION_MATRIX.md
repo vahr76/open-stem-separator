@@ -12,10 +12,14 @@ These are the first targets for public releases.
 
 | OS | Package | Goal | Notes |
 | --- | --- | --- | --- |
-| Windows x64 | `.zip` + `install.ps1`, later `.msi` | User can install without Python | Build on Windows; include `ytd.exe`, yt-dlp, FFmpeg, ffprobe, Deno |
+| Windows x64 | `.zip` + `install.cmd`, later `.msi` | User can install without Python | Build on Windows; include `ytd.exe`, yt-dlp, FFmpeg, ffprobe, Deno |
 | macOS arm64 | `.zip` + `install-macos.sh`, later signed `.pkg` | Native Apple Silicon support | Build on macOS arm64; notarization later |
 | macOS x64 | `.zip` + `install-macos.sh`, later signed `.pkg` | Intel Mac support | Build on macOS x64 or universal build |
 | Linux x64 generic | `.tar.gz` + `install.sh` | Works across most distros | First Linux artifact; no root required |
+
+## Current priority
+
+Windows and macOS packages are more important for the first musician-facing release than distro-specific Linux packages. Linux generic `.tar.gz` remains supported, while `.deb`, `.rpm`, Arch and AppImage are deferred until Windows/macOS packages exist.
 
 ## Tier 2 Linux packages
 
@@ -63,9 +67,11 @@ windows-latest: ytd-<version>-windows-x64.zip
 macos-14:      ytd-<version>-macos-arm64.zip
 macos-13:      ytd-<version>-macos-x64.zip
 ubuntu-latest: ytd-<version>-linux-x64.tar.gz
+windows-latest: ytd-<version>-windows-x64.zip, with install.cmd
+# Later:
 ubuntu-latest: ytd-<version>-linux-x64.deb
 ubuntu-latest: ytd-<version>-linux-x64.rpm
-archlinux:     PKGBUILD / pkg.tar.zst, later
+archlinux:     PKGBUILD / pkg.tar.zst
 ```
 
 CI requires a GitHub token with workflow permission. Until then, workflows can stay outside the committed tree or be added manually through GitHub.
