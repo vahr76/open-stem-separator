@@ -20,6 +20,11 @@ For public `linux-x64` packages:
 
 This does not guarantee compatibility with every Linux distribution, but it avoids publishing a binary tied to a very new rolling-release glibc.
 
+
+## Bundled FFmpeg rule
+
+The Linux package must not copy `/usr/bin/ffmpeg` or `/usr/bin/ffprobe` from the build runner unless their required shared libraries are bundled too. The release workflow downloads a static FFmpeg build and verifies the packaged `bin/ffmpeg` and `bin/ffprobe` with `-version` before uploading the artifact.
+
 ## Manual smoke test
 
 On each target Linux machine, download the release tarball and run:

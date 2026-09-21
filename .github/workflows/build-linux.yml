@@ -46,7 +46,12 @@ jobs:
           curl -L https://github.com/denoland/deno/releases/latest/download/deno-x86_64-unknown-linux-gnu.zip -o tools-bin/deno.zip
           python -m zipfile -e tools-bin/deno.zip tools-bin
           chmod +x tools-bin/deno
-          sudo apt-get install -y ffmpeg
+          curl -L https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz -o tools-bin/ffmpeg-static.tar.xz
+          tar -xf tools-bin/ffmpeg-static.tar.xz -C tools-bin
+          ffmpeg_dir="$(find tools-bin -maxdepth 1 -type d -name 'ffmpeg-*-amd64-static' | sort | tail -n 1)"
+          cp "$ffmpeg_dir/ffmpeg" tools-bin/ffmpeg
+          cp "$ffmpeg_dir/ffprobe" tools-bin/ffprobe
+          chmod +x tools-bin/ffmpeg tools-bin/ffprobe
           echo "$PWD/tools-bin" >> "$GITHUB_PATH"
 
       - name: Unit tests
@@ -64,6 +69,10 @@ jobs:
           test -x "$payload/uninstall.sh"
           test -f "$payload/SHA256SUMS.txt"
           "$payload/ytd" doctor
+          "$payload/bin/yt-dlp" --version
+          "$payload/bin/ffmpeg" -version
+          "$payload/bin/ffprobe" -version
+          "$payload/bin/deno" --version
           objdump -T "$payload/ytd" | grep -o 'GLIBC_[0-9][0-9.]*' | sort -Vu | tee "$payload/GLIBC_REQUIREMENTS.txt"
           max_glibc="$(objdump -T "$payload/ytd" | grep -o 'GLIBC_[0-9][0-9.]*' | sort -Vu | tail -n 1)"
           echo "Max GLIBC requirement: ${max_glibc:-unknown}"
