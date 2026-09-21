@@ -85,9 +85,15 @@ La razón es práctica: PyInstaller y los binarios nativos de FFmpeg/Deno no pro
 Desde la carpeta `outputs/oss`:
 
 ```sh
+python3 -m venv .venv-build
+. .venv-build/bin/activate
+python -m pip install --upgrade pip
+python -m pip install pyinstaller
 chmod +x tools/build-linux.sh
 tools/build-linux.sh
 ```
+
+En distros que aplican PEP 668, como Arch/CachyOS/Manjaro, no usar `pip --user` ni `--break-system-packages`; usar venv para mantener PyInstaller aislado del Python del sistema.
 
 Si PyInstaller está disponible, crea un ejecutable `ytd`. Si no está disponible, genera un paquete fuente con wrapper `ytd` que requiere Python 3. En ambos casos intenta copiar `yt-dlp`, `ffmpeg`, `ffprobe` y `deno` desde PATH hacia `bin/`.
 
