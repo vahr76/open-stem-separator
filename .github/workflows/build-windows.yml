@@ -42,7 +42,7 @@ jobs:
           Invoke-WebRequest -Uri "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe" -OutFile "tools-bin\yt-dlp.exe"
           Invoke-WebRequest -Uri "https://github.com/denoland/deno/releases/latest/download/deno-x86_64-pc-windows-msvc.zip" -OutFile "tools-bin\deno.zip"
           Expand-Archive -Path "tools-bin\deno.zip" -DestinationPath "tools-bin" -Force
-          Invoke-WebRequest -Uri "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip" -OutFile "tools-bin\ffmpeg.zip"
+          Invoke-WebRequest -Uri "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip" -OutFile "tools-bin\ffmpeg.zip"
           Expand-Archive -Path "tools-bin\ffmpeg.zip" -DestinationPath "tools-bin\ffmpeg" -Force
           $ffmpegRoot = Get-ChildItem "tools-bin\ffmpeg" -Directory | Select-Object -First 1
           Copy-Item "$($ffmpegRoot.FullName)\bin\ffmpeg.exe" "tools-bin\ffmpeg.exe" -Force
