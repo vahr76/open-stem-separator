@@ -34,6 +34,30 @@ Es la variante objetivo para usuarios finales. Debe incluir:
 
 En esa variante el usuario descarga un paquete para su sistema, ejecuta el instalador y obtiene el comando `ytd` sin instalar Python manualmente.
 
+La estructura objetivo del paquete Linux genérico ya se genera desde `tools/build-linux.sh`:
+
+```text
+ytd-0.1.0-linux-x64/
+  ytd
+  ytd.py                  # solo cuando PyInstaller no está disponible
+  bin/
+    yt-dlp
+    ffmpeg
+    ffprobe
+    deno
+  legal/
+    THIRD_PARTY_NOTICES.md
+  README.md
+  COPYRIGHT_AND_USAGE.md
+  dependencies.json
+  manifest.json
+  SHA256SUMS.txt
+  install.sh
+  uninstall.sh
+```
+
+Cuando PyInstaller esté disponible, `ytd.py` desaparece y `ytd` pasa a ser un binario one-file. El resto del payload se mantiene igual. Esa estabilidad permite reutilizar el mismo staging para `.deb`, `.rpm`, Arch, SUSE/openSUSE y AppImage.
+
 ## Regla de calidad
 
 La selección de calidad vive en el código, no en el instalador. Para mantener el comportamiento consistente:
@@ -67,7 +91,7 @@ tools/build-linux.sh
 
 Si PyInstaller está disponible, crea un ejecutable `ytd`. Si no está disponible, genera un paquete fuente con wrapper `ytd` que requiere Python 3. En ambos casos intenta copiar `yt-dlp`, `ffmpeg`, `ffprobe` y `deno` desde PATH hacia `bin/`.
 
-El script escribe en `release/dist-linux-x64-<fecha>/` para no pisar builds anteriores.
+El script escribe en `release/dist-linux-x64-<fecha>/` para no pisar builds anteriores. Dentro de esa carpeta quedan el payload descomprimido y el archivo `ytd-0.1.0-linux-x64.tar.gz`. El payload incluye `install.sh`, `uninstall.sh`, `manifest.json` y `SHA256SUMS.txt`.
 
 ## Checklist antes de publicar
 
