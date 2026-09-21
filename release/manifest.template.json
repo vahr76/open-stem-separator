@@ -1,0 +1,21 @@
+{
+  "name": "ytd",
+  "project": "OSS - Open Stem Separator",
+  "version": "0.1.0",
+  "target": "linux-x64",
+  "created_at": "REPLACE_WITH_ISO_8601",
+  "package": "ytd-0.1.0-linux-x64.tar.gz",
+  "sha256": "REPLACE_WITH_PACKAGE_HASH",
+  "entrypoint": "ytd",
+  "bundled": {
+    "oss_core": {"version": "0.1.0"},
+    "yt_dlp": {"version": "REPLACE", "sha256": "REPLACE"},
+    "ffmpeg": {"version": "REPLACE", "sha256": "REPLACE"},
+    "ffprobe": {"version": "REPLACE", "sha256": "REPLACE"},
+    "deno": {"version": "REPLACE", "sha256": "REPLACE"}
+  },
+  "notes": [
+    "La calidad se selecciona automáticamente como la mejor disponible para el formato elegido.",
+    "El paquete debe incluir avisos y licencias de terceros antes de publicarse."
+  ]
+}

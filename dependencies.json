@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "notes": [
+    "Manifest inicial para el instalador liviano. Antes de publicar paquetes reales hay que fijar versiones exactas y hashes SHA-256.",
+    "FFmpeg y Deno quedan como dependencias detectadas por ahora; el paquete offline debe incluirlas en bin/ respetando sus licencias."
+  ],
+  "yt-dlp": {
+    "linux": {
+      "url": "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp",
+      "target": "bin/yt-dlp",
+      "sha256": null
+    },
+    "macos": {
+      "url": "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos",
+      "target": "bin/yt-dlp",
+      "sha256": null
+    },
+    "windows": {
+      "url": "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe",
+      "target": "bin/yt-dlp.exe",
+      "sha256": null
+    }
+  }
+}
