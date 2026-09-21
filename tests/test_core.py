@@ -287,6 +287,38 @@ class CoreTests(unittest.TestCase):
             self.assertEqual(oss.main(['history', '--limit', '1']), 0)
             self.assertIn('mp3', printer.call_args.args[0])
 
+
+    def test_config_command_prints_paths(self):
+        with tempfile.TemporaryDirectory() as directory, patch('oss.CONFIG_PATH', Path(directory) / 'config.json'), patch('builtins.print') as printer:
+            self.assertEqual(oss.main(['config']), 0)
+            output = '\n'.join(call.args[0] for call in printer.call_args_list)
+            self.assertIn('Config:', output)
+            self.assertIn('Descargas:', output)
+            self.assertIn('Historial:', output)
+
+    def test_last_command_prints_last_history_entry(self):
+        with tempfile.TemporaryDirectory() as directory, patch('oss.history_path', return_value=Path(directory) / 'history.jsonl'), patch('builtins.print') as printer:
+            oss.append_history({'url': 'https://example.org/song', 'profile': 'flac', 'status': 'ok', 'artist': 'Artist', 'track': 'Song', 'project_dir': str(Path(directory) / 'Artist' / 'Song')})
+            self.assertEqual(oss.main(['last']), 0)
+            output = '\n'.join(call.args[0] for call in printer.call_args_list)
+            self.assertIn('Última descarga:', output)
+            self.assertIn('Artist', output)
+            self.assertIn('Song', output)
+
+    def test_open_downloads_uses_default_downloads(self):
+        with tempfile.TemporaryDirectory() as directory, patch('oss.default_downloads', return_value=Path(directory)), patch('oss.open_path') as open_path:
+            open_path.return_value = 0
+            self.assertEqual(oss.main(['open', 'downloads']), 0)
+            self.assertTrue(same_path(open_path.call_args.args[0], directory))
+
+    def test_open_last_uses_history_project_dir(self):
+        with tempfile.TemporaryDirectory() as directory, patch('oss.history_path', return_value=Path(directory) / 'history.jsonl'), patch('oss.open_path') as open_path:
+            project = Path(directory) / 'Artist' / 'Song'
+            oss.append_history({'url': 'https://example.org/song', 'profile': 'flac', 'status': 'ok', 'project_dir': str(project)})
+            open_path.return_value = 0
+            self.assertEqual(oss.main(['open']), 0)
+            self.assertTrue(same_path(open_path.call_args.args[0], project))
+
     def test_unwritable_output(self):
         with patch('oss.tempfile.TemporaryFile', side_effect=PermissionError('denied')):
             with tempfile.TemporaryDirectory() as directory:

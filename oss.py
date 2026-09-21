@@ -143,6 +143,63 @@ def read_history(limit=None, path=None):
     return rows[-limit:] if limit else rows
 
 
+def last_history_entry():
+    rows = [row for row in read_history() if row.get('status') != 'invalid']
+    return rows[-1] if rows else None
+
+
+def print_config():
+    print(f'Config: {active_config_path()}')
+    print(f'Descargas: {default_downloads()}')
+    print(f'Historial: {history_path()}')
+    print(f'Miniaturas: {configured("thumbnail_mode", "none")}')
+    return 0
+
+
+def print_last():
+    row = last_history_entry()
+    if not row:
+        print('No hay descargas registradas todavía.')
+        return 1
+    print('Última descarga:')
+    if row.get('artist'):
+        print(f'Artista: {row.get("artist")}')
+    if row.get('track'):
+        print(f'Tema: {row.get("track")}')
+    if row.get('title'):
+        print(f'Título: {row.get("title")}')
+    print(f'Perfil: {row.get("profile", "")}')
+    print(f'Estado: {row.get("status", "")}')
+    if row.get('project_dir'):
+        print(f'Carpeta: {row.get("project_dir")}')
+    print(f'URL: {row.get("url", "")}')
+    return 0
+
+
+def open_path(path):
+    path = Path(path).expanduser().resolve()
+    if os.name == 'nt':
+        os.startfile(str(path))  # type: ignore[attr-defined]
+        return 0
+    opener = 'open' if sys.platform == 'darwin' else 'xdg-open'
+    executable_path = shutil.which(opener)
+    if not executable_path:
+        raise ValueError(f'No encontré {opener} para abrir {path}.')
+    subprocess.Popen([executable_path, str(path)])
+    return 0
+
+
+def open_target(target='last'):
+    if target in (None, '', 'last'):
+        row = last_history_entry()
+        if row and row.get('project_dir'):
+            return open_path(row['project_dir'])
+        return open_path(default_downloads())
+    if target == 'downloads':
+        return open_path(default_downloads())
+    return open_path(target)
+
+
 def history_entry(url, profile, project_dir=None, status='ok', code=0, kind=None):
     entry = {
         'url': validate_url(url),
@@ -723,12 +780,16 @@ def main(argv=None):
         except (ValueError, OSError) as exc:
             print(f'OSS: {exc}', file=sys.stderr)
             return 1
-    elif argv and argv[0] not in ('doctor', 'configure', 'download', 'formats', '-h', '--help') and is_url(argv[0]):
+    elif argv and argv[0] not in ('doctor', 'configure', 'config', 'last', 'open', 'history', 'download', 'formats', '-h', '--help') and is_url(argv[0]):
         argv = ['download'] + argv
     parser = argparse.ArgumentParser(description='OSS — Open Stem Separator: núcleo de descarga')
     parser.add_argument('--config', help='Ruta de configuración alternativa para pruebas o instalaciones aisladas')
     sub = parser.add_subparsers(dest='action')
     sub.add_parser('doctor', help='Comprobar motores')
+    sub.add_parser('config', help='Mostrar configuración activa')
+    sub.add_parser('last', help='Mostrar última descarga registrada')
+    open_parser = sub.add_parser('open', help='Abrir carpeta de descargas o último proyecto')
+    open_parser.add_argument('target', nargs='?', default='last', help='last, downloads o una ruta')
     history_parser = sub.add_parser('history', help='Mostrar historial local de descargas')
     history_parser.add_argument('--limit', type=int, default=20)
     config_parser = sub.add_parser('configure', help='Guardar carpeta de descargas por usuario')
@@ -754,6 +815,12 @@ def main(argv=None):
             return menu()
         if ns.action == 'doctor':
             return doctor()
+        if ns.action == 'config':
+            return print_config()
+        if ns.action == 'last':
+            return print_last()
+        if ns.action == 'open':
+            return open_target(ns.target)
         if ns.action == 'history':
             for row in read_history(ns.limit):
                 print(json.dumps(row, ensure_ascii=False))

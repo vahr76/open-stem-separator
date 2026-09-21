@@ -29,3 +29,8 @@ La primera etapa no se considera cerrada hasta que `ytd` tenga una estrategia cl
 ## Historial local
 
 El núcleo `ytd` registra descargas en `history.jsonl`. Esto queda como base para UI web, proyectos, reintentos, evitar duplicados y futuras etapas de separación de stems.
+
+
+## Comandos de comodidad
+
+`ytd config`, `ytd last` y `ytd open` acercan el núcleo a un flujo de usuario real: ver dónde se descarga, consultar la última descarga y abrir la carpeta del proyecto sin recordar rutas.
