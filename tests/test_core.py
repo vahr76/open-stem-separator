@@ -281,11 +281,20 @@ class CoreTests(unittest.TestCase):
             self.assertEqual(rows[-1]['artist'], 'Artist')
             self.assertEqual(rows[-1]['track'], 'Song')
 
-    def test_history_command_prints_rows(self):
+    def test_history_command_prints_table(self):
+        with tempfile.TemporaryDirectory() as directory, patch('oss.history_path', return_value=Path(directory) / 'history.jsonl'), patch('builtins.print') as printer:
+            oss.append_history({'url': 'https://example.org/song', 'profile': 'mp3', 'status': 'ok', 'artist': 'Artist', 'track': 'Song'})
+            self.assertEqual(oss.main(['history', '--limit', '1']), 0)
+            output = '\n'.join(call.args[0] for call in printer.call_args_list)
+            self.assertIn('Fecha', output)
+            self.assertIn('Artist', output)
+            self.assertIn('Song', output)
+
+    def test_history_command_json_output(self):
         with tempfile.TemporaryDirectory() as directory, patch('oss.history_path', return_value=Path(directory) / 'history.jsonl'), patch('builtins.print') as printer:
             oss.append_history({'url': 'https://example.org/song', 'profile': 'mp3', 'status': 'ok'})
-            self.assertEqual(oss.main(['history', '--limit', '1']), 0)
-            self.assertIn('mp3', printer.call_args.args[0])
+            self.assertEqual(oss.main(['history', '--limit', '1', '--json']), 0)
+            self.assertIn('"profile": "mp3"', printer.call_args.args[0])
 
 
     def test_config_command_prints_paths(self):

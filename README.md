@@ -48,7 +48,7 @@ Las URLs pegadas como enlace Markdown, por ejemplo `[https://...](https://...)`,
 
 Cada descarga crea una carpeta de proyecto. OSS intenta detectar `artista/tema` desde metadata real de yt-dlp o desde títulos con forma `Artista - Tema`. Si no hay confianza suficiente, guarda en `_unsorted/Titulo`. También escribe `metadata.json` con URL, título, uploader, duración, ID y el origen/confianza de la detección.
 
-Además mantiene un historial local en `history.jsonl` junto a la configuración de OSS. `ytd history` muestra las últimas entradas. Cada línea registra fecha, URL, perfil, estado, código de salida, carpeta de proyecto y datos detectados como artista/tema cuando existen. En pruebas se puede aislar con `--config /tmp/oss-test/config.json` u `OSS_CONFIG_DIR=/tmp/oss-test/config`.
+Además mantiene un historial local en `history.jsonl` junto a la configuración de OSS. `ytd history` muestra las últimas entradas en formato legible; `ytd history --json` conserva salida JSON Lines para scripts. Cada entrada registra fecha, URL, perfil, estado, código de salida, carpeta de proyecto y datos detectados como artista/tema cuando existen. En pruebas se puede aislar con `--config /tmp/oss-test/config.json` u `OSS_CONFIG_DIR=/tmp/oss-test/config`.
 
 Comandos de comodidad:
 

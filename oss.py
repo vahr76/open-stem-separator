@@ -176,6 +176,42 @@ def print_last():
     return 0
 
 
+def short_time(value):
+    if not value:
+        return ''
+    return str(value).replace('T', ' ')[:19]
+
+
+def clip(value, width):
+    value = '' if value is None else str(value)
+    return value if len(value) <= width else value[:max(0, width - 1)] + '…'
+
+
+def print_history(limit=20, json_output=False):
+    rows = read_history(limit)
+    if json_output:
+        for row in rows:
+            print(json.dumps(row, ensure_ascii=False))
+        return 0
+    if not rows:
+        print('No hay descargas registradas todavía.')
+        return 0
+    headers = ('Fecha', 'Estado', 'Perfil', 'Artista', 'Tema')
+    widths = (19, 6, 8, 22, 32)
+    print('  '.join(header.ljust(width) for header, width in zip(headers, widths)))
+    print('  '.join('-' * width for width in widths))
+    for row in rows:
+        values = (
+            short_time(row.get('timestamp')),
+            row.get('status', ''),
+            row.get('profile', ''),
+            row.get('artist', ''),
+            row.get('track') or row.get('title') or row.get('url', ''),
+        )
+        print('  '.join(clip(value, width).ljust(width) for value, width in zip(values, widths)))
+    return 0
+
+
 def open_path(path):
     path = Path(path).expanduser().resolve()
     if os.name == 'nt':
@@ -792,6 +828,7 @@ def main(argv=None):
     open_parser.add_argument('target', nargs='?', default='last', help='last, downloads o una ruta')
     history_parser = sub.add_parser('history', help='Mostrar historial local de descargas')
     history_parser.add_argument('--limit', type=int, default=20)
+    history_parser.add_argument('--json', action='store_true', help='Mostrar JSON Lines para scripts')
     config_parser = sub.add_parser('configure', help='Guardar carpeta de descargas por usuario')
     config_parser.add_argument('--downloads-dir', type=Path, required=True)
     config_parser.add_argument('--install-mode', choices=('offline', 'online'))
@@ -822,9 +859,7 @@ def main(argv=None):
         if ns.action == 'open':
             return open_target(ns.target)
         if ns.action == 'history':
-            for row in read_history(ns.limit):
-                print(json.dumps(row, ensure_ascii=False))
-            return 0
+            return print_history(ns.limit, ns.json)
         if ns.action == 'configure':
             return configure(ns.downloads_dir, ns.install_mode, ns.thumbnails)
         args = command(ns.url, ns.profile, ns.output, ns.action == 'formats', ns.playlist,

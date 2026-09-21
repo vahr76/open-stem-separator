@@ -144,13 +144,13 @@ This avoids changing the real user config.
 
 ## History and convenience commands
 
-### Show raw local history
+### Show local history
 
 ```sh
 ytd history
 ```
 
-Shows recent history entries as JSON lines.
+Shows recent history entries as a readable table.
 
 Limit entries:
 
@@ -159,6 +159,13 @@ ytd history --limit 5
 ```
 
 History is stored as `history.jsonl` next to the active config, unless a custom history file is configured internally.
+
+For scripts, keep JSON Lines output with:
+
+```sh
+ytd history --json
+ytd history --limit 5 --json
+```
 
 ### Show last download
 
