@@ -184,4 +184,4 @@ lyrics/
 
 ## Versioning rule
 
-Adding `project.json` and this folder contract is a product-foundation change. If implemented in code, it should likely bump the pre-1.0 minor version, for example from `0.1.x` to `0.2.0`, because it changes the project model rather than only packaging or QoL.
+`project.json` was introduced in `v0.2.0` as a product-foundation change. Future schema changes should preserve backward compatibility or include migration notes.

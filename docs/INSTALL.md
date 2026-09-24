@@ -20,8 +20,8 @@ https://github.com/vahr76/open-stem-separator/releases
 Extract the package and run the installer:
 
 ```sh
-tar -xzf ytd-0.1.4-linux-x64.tar.gz
-cd ytd-0.1.4-linux-x64
+tar -xzf ytd-0.2.0-linux-x64.tar.gz
+cd ytd-0.2.0-linux-x64
 ./install.sh
 ```
 

@@ -60,7 +60,7 @@ jobs:
       - name: Inspect package
         shell: pwsh
         run: |
-          $payload = Get-ChildItem release -Recurse -Directory -Filter ytd-0.1.4-windows-x64 | Sort-Object FullName | Select-Object -Last 1
+          $payload = Get-ChildItem release -Recurse -Directory -Filter ytd-0.2.0-windows-x64 | Sort-Object FullName | Select-Object -Last 1
           if (-not $payload) { throw "Payload not found" }
           Get-ChildItem $payload.FullName -Recurse | Select-Object FullName, Length
           if (-not (Test-Path (Join-Path $payload.FullName "install.cmd"))) { throw "install.cmd missing" }
@@ -72,6 +72,6 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ytd-0.1.4-windows-x64
+          name: ytd-0.2.0-windows-x64
           path: release/dist-windows-x64-*/*.zip
           if-no-files-found: error
