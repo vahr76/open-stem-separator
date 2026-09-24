@@ -39,3 +39,13 @@ El núcleo `ytd` registra descargas en `history.jsonl`. Esto queda como base par
 ## Versionado
 
 La regla de versionado referencial está en `docs/VERSIONING.md`. Mientras OSS esté en `0.x.y`, PATCH cubre QoL/fixes/docs/packaging menor y MINOR cubre funcionalidad nueva de producto o soporte de plataforma validado.
+
+## Próximo bloque: proyecto OSS local
+
+Antes de integrar motores de separación, OSS necesita estabilizar el contrato de carpeta de proyecto. `ytd` ya crea una carpeta por artista/tema y escribe `metadata.json`; la siguiente etapa debe convertir esa carpeta en un proyecto OSS explícito con `project.json`, subcarpetas para originales, descargas, stems, análisis, letras, exports, caché y manifests.
+
+Este paso permite que el refactor modular de `oss.py` y el futuro laboratorio de separación compartan una misma base de datos local sin reescribir flujos.
+
+## Benchmark de separación
+
+El benchmark de separación debe vivir primero como laboratorio separado del flujo principal. Debe comparar motores y checkpoints sobre fragmentos controlados, registrar manifiestos, tiempos, RAM/VRAM, calidad perceptual, residual y reconstrucción. Ningún modelo debe convertirse en default por reputación o ranking externo sin medición local.
