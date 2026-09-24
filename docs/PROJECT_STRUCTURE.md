@@ -55,7 +55,7 @@ Artist/
     └── project.json
 ```
 
-`project.json` should be added in a backward-compatible way. Existing files do not need to be moved immediately.
+`project.json` is now written by `ytd` when creating a project. Existing files do not need to be moved immediately.
 
 ## `project.json`
 

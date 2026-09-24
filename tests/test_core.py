@@ -1,4 +1,5 @@
 import unittest
+import json
 import tempfile
 from pathlib import Path
 from unittest.mock import patch
@@ -71,7 +72,7 @@ class CoreTests(unittest.TestCase):
         guess = oss.guess_artist_track({'title': 'No clear separator'})
         self.assertEqual(guess['artist'], '_unsorted')
 
-    def test_create_project_writes_metadata(self):
+    def test_create_project_writes_metadata_and_project_manifest(self):
         with tempfile.TemporaryDirectory() as directory:
             project = oss.create_project('https://example.org/song', directory, {
                 'title': 'Artist - Track (Official Video)',
@@ -81,9 +82,48 @@ class CoreTests(unittest.TestCase):
                 'id': 'abc',
             })
             self.assertTrue(same_path(project, Path(directory) / 'Artist' / 'Track'))
-            metadata = (project / 'metadata.json').read_text(encoding='utf-8')
-            self.assertIn('"artist_guess": "Artist"', metadata)
-            self.assertIn('"track_guess": "Track"', metadata)
+            metadata = json.loads((project / 'metadata.json').read_text(encoding='utf-8'))
+            self.assertEqual(metadata['artist_guess'], 'Artist')
+            self.assertEqual(metadata['track_guess'], 'Track')
+            manifest = json.loads((project / 'project.json').read_text(encoding='utf-8'))
+            self.assertEqual(manifest['schema'], 1)
+            self.assertEqual(manifest['kind'], 'song-project')
+            self.assertEqual(manifest['source']['url'], 'https://example.org/song')
+            self.assertEqual(manifest['source']['extractor'], 'yt-dlp')
+            self.assertEqual(manifest['source']['id'], 'abc')
+            self.assertEqual(manifest['identity']['artist'], 'Artist')
+            self.assertEqual(manifest['identity']['track'], 'Track')
+            self.assertEqual(manifest['media'], [])
+            self.assertEqual(manifest['stems'], [])
+
+    def test_create_project_preserves_existing_manifest_lists(self):
+        with tempfile.TemporaryDirectory() as directory:
+            project_dir = Path(directory) / 'Artist' / 'Track'
+            project_dir.mkdir(parents=True)
+            existing = {
+                'created_at': '2026-01-01T00:00:00+00:00',
+                'media': [{'path': 'old.flac'}],
+                'stems': [{'name': 'bass'}],
+                'analysis': {'tempo': 'analysis/detected/tempo.json'},
+                'lyrics': {'synced': 'lyrics/detected.lrc'},
+                'exports': [{'path': 'exports/mix.wav'}],
+                'notes': ['keep me'],
+            }
+            (project_dir / 'project.json').write_text(json.dumps(existing), encoding='utf-8')
+            project = oss.create_project('https://example.org/song', directory, {
+                'title': 'Artist - Track',
+                'webpage_url': 'https://example.org/song',
+                'id': 'abc',
+            })
+            manifest = json.loads((project / 'project.json').read_text(encoding='utf-8'))
+            self.assertEqual(manifest['created_at'], existing['created_at'])
+            self.assertEqual(manifest['media'], existing['media'])
+            self.assertEqual(manifest['stems'], existing['stems'])
+            self.assertEqual(manifest['analysis'], existing['analysis'])
+            self.assertEqual(manifest['lyrics'], existing['lyrics'])
+            self.assertEqual(manifest['exports'], existing['exports'])
+            self.assertEqual(manifest['notes'], existing['notes'])
+            self.assertIn('updated_at', manifest)
 
     def test_invalid_urls(self):
         for url in ('file:///tmp/song', '--exec=bad', 'https://', 'https://u:p@example.org'):

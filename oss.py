@@ -489,6 +489,57 @@ def fetch_metadata(url):
     return {'webpage_url': validate_url(url), 'title': 'Unknown', 'metadata_error': 'metadata inválida'}
 
 
+def write_json(path, data):
+    with Path(path).open('w', encoding='utf-8') as handle:
+        json.dump(data, handle, ensure_ascii=False, indent=2)
+        handle.write('\n')
+
+
+def read_json_object(path):
+    try:
+        with Path(path).open('r', encoding='utf-8') as handle:
+            data = json.load(handle)
+    except (FileNotFoundError, OSError, json.JSONDecodeError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def initial_project_manifest(url, info, guess, existing=None):
+    existing = dict(existing or {})
+    now = datetime.now(timezone.utc).isoformat()
+    webpage_url = info.get('webpage_url') or info.get('original_url') or validate_url(url)
+    manifest = {
+        'schema': 1,
+        'app': 'oss',
+        'kind': 'song-project',
+        'created_at': existing.get('created_at') or now,
+        'updated_at': now,
+        'source': {
+            **(existing.get('source') if isinstance(existing.get('source'), dict) else {}),
+            'url': validate_url(url),
+            'extractor': 'yt-dlp',
+            'webpage_url': webpage_url,
+            'id': info.get('id'),
+        },
+        'identity': {
+            **(existing.get('identity') if isinstance(existing.get('identity'), dict) else {}),
+            'artist': guess['artist'],
+            'track': guess['track'],
+            'artist_slug': guess['artist'],
+            'track_slug': guess['track'],
+            'confidence': guess['confidence'],
+            'source': guess['source'],
+        },
+        'media': existing.get('media') if isinstance(existing.get('media'), list) else [],
+        'stems': existing.get('stems') if isinstance(existing.get('stems'), list) else [],
+        'analysis': existing.get('analysis') if isinstance(existing.get('analysis'), dict) else {},
+        'lyrics': existing.get('lyrics') if isinstance(existing.get('lyrics'), dict) else {},
+        'exports': existing.get('exports') if isinstance(existing.get('exports'), list) else [],
+        'notes': existing.get('notes') if isinstance(existing.get('notes'), list) else [],
+    }
+    return manifest
+
+
 def create_project(url, download_root=None, info=None):
     info = info or fetch_metadata(url)
     guess = guess_artist_track(info)
@@ -507,9 +558,10 @@ def create_project(url, download_root=None, info=None):
         'duration': info.get('duration'),
         'id': info.get('id'),
     }
-    with (project_dir / 'metadata.json').open('w', encoding='utf-8') as handle:
-        json.dump(metadata, handle, ensure_ascii=False, indent=2)
-        handle.write('\n')
+    write_json(project_dir / 'metadata.json', metadata)
+    project_path = project_dir / 'project.json'
+    project_manifest = initial_project_manifest(url, info, guess, read_json_object(project_path))
+    write_json(project_path, project_manifest)
     return project_dir
 
 
