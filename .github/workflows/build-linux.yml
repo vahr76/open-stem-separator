@@ -62,13 +62,15 @@ jobs:
 
       - name: Inspect package and GLIBC requirements
         run: |
-          payload="$(find release -type d -name 'ytd-0.2.2-linux-x64' | sort | tail -n 1)"
+          payload="$(find release -type d -name 'ytd-0.3.0-linux-x64' | sort | tail -n 1)"
           test -n "$payload"
           test -x "$payload/ytd"
+          test -x "$payload/oss-lab"
           test -x "$payload/install.sh"
           test -x "$payload/uninstall.sh"
           test -f "$payload/SHA256SUMS.txt"
           "$payload/ytd" doctor
+          "$payload/oss-lab" --help
           "$payload/bin/yt-dlp" --version
           "$payload/bin/ffmpeg" -version
           "$payload/bin/ffprobe" -version
@@ -90,6 +92,6 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ytd-0.2.2-linux-x64
+          name: ytd-0.3.0-linux-x64
           path: release/dist-linux-x64-*/*.tar.gz
           if-no-files-found: error

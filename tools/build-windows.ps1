@@ -1,7 +1,7 @@
 $ErrorActionPreference = "Stop"
 
 $AppName = "ytd"
-$AppVersion = "0.2.2"
+$AppVersion = "0.3.0"
 $Target = "windows-x64"
 $PackageName = "$AppName-$AppVersion-$Target"
 $RootDir = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
@@ -28,7 +28,8 @@ function Get-FileSha256($Path) {
 function Build-App($PayloadDir) {
     $pyinstaller = Get-Command pyinstaller.exe -ErrorAction SilentlyContinue
     if ($pyinstaller) {
-        & $pyinstaller.Source --onefile --name ytd --distpath $PayloadDir --workpath (Join-Path $DistDir "build") --specpath $DistDir (Join-Path $RootDir "oss.py")
+        & $pyinstaller.Source --onefile --name ytd --distpath $PayloadDir --workpath (Join-Path $DistDir "build-ytd") --specpath $DistDir (Join-Path $RootDir "oss.py")
+        & $pyinstaller.Source --onefile --name oss-lab --distpath $PayloadDir --workpath (Join-Path $DistDir "build-oss-lab") --specpath $DistDir (Join-Path $RootDir "oss_lab.py")
         Write-Host "Modo de app: binario PyInstaller"
         return
     }
@@ -37,14 +38,17 @@ function Build-App($PayloadDir) {
     if ($python) {
         & $python.Source -m PyInstaller --version *> $null
         if ($LASTEXITCODE -eq 0) {
-            & $python.Source -m PyInstaller --onefile --name ytd --distpath $PayloadDir --workpath (Join-Path $DistDir "build") --specpath $DistDir (Join-Path $RootDir "oss.py")
+            & $python.Source -m PyInstaller --onefile --name ytd --distpath $PayloadDir --workpath (Join-Path $DistDir "build-ytd") --specpath $DistDir (Join-Path $RootDir "oss.py")
+            & $python.Source -m PyInstaller --onefile --name oss-lab --distpath $PayloadDir --workpath (Join-Path $DistDir "build-oss-lab") --specpath $DistDir (Join-Path $RootDir "oss_lab.py")
             Write-Host "Modo de app: binario PyInstaller"
             return
         }
     }
 
     Copy-Item -Path (Join-Path $RootDir "oss.py") -Destination (Join-Path $PayloadDir "ytd.py") -Force
+    Copy-Item -Path (Join-Path $RootDir "oss_lab.py") -Destination (Join-Path $PayloadDir "oss_lab.py") -Force
     Set-Content -Path (Join-Path $PayloadDir "ytd.cmd") -Encoding ASCII -Value '@echo off`r`npy "%~dp0ytd.py" %*`r`n'
+    Set-Content -Path (Join-Path $PayloadDir "oss-lab.cmd") -Encoding ASCII -Value '@echo off`r`npy "%~dp0oss_lab.py" %*`r`n'
     Write-Host "Modo de app: wrapper fuente; requiere Python 3."
 }
 
@@ -54,13 +58,14 @@ function Write-InstallCmd($PayloadDir) {
 setlocal EnableExtensions
 
 set "APP_NAME=ytd"
-set "APP_VERSION=0.2.2"
-set "PACKAGE_NAME=ytd-0.2.2-windows-x64"
+set "APP_VERSION=0.3.0"
+set "PACKAGE_NAME=ytd-0.3.0-windows-x64"
 set "SOURCE_DIR=%~dp0"
 set "INSTALL_ROOT=%LOCALAPPDATA%\OSS"
 set "INSTALL_DIR=%INSTALL_ROOT%\%PACKAGE_NAME%"
 set "BIN_DIR=%LOCALAPPDATA%\OSS\bin"
 set "LAUNCHER=%BIN_DIR%\ytd.cmd"
+set "LAB_LAUNCHER=%BIN_DIR%\oss-lab.cmd"
 
 if not exist "%INSTALL_DIR%" mkdir "%INSTALL_DIR%"
 if not exist "%BIN_DIR%" mkdir "%BIN_DIR%"
@@ -76,6 +81,12 @@ if errorlevel 1 (
 if not exist "%INSTALL_DIR%\ytd.exe" (
   > "%LAUNCHER%" echo @echo off
   >> "%LAUNCHER%" echo "%INSTALL_DIR%\ytd.cmd" %%*
+)
+> "%LAB_LAUNCHER%" echo @echo off
+>> "%LAB_LAUNCHER%" echo "%INSTALL_DIR%\oss-lab.exe" %%*
+if not exist "%INSTALL_DIR%\oss-lab.exe" (
+  > "%LAB_LAUNCHER%" echo @echo off
+  >> "%LAB_LAUNCHER%" echo "%INSTALL_DIR%\oss-lab.cmd" %%*
 )
 
 set "USER_PATH="
@@ -93,6 +104,7 @@ if errorlevel 1 (
 
 echo OSS Downloader Core instalado.
 echo Comando: ytd
+echo Lab experimental: oss-lab
 endlocal
 '@ | Set-Content -Path (Join-Path $PayloadDir "install.cmd") -Encoding ASCII
 }
@@ -102,13 +114,15 @@ function Write-UninstallCmd($PayloadDir) {
 @echo off
 setlocal EnableExtensions
 
-set "PACKAGE_NAME=ytd-0.2.2-windows-x64"
+set "PACKAGE_NAME=ytd-0.3.0-windows-x64"
 set "INSTALL_ROOT=%LOCALAPPDATA%\OSS"
 set "INSTALL_DIR=%INSTALL_ROOT%\%PACKAGE_NAME%"
 set "BIN_DIR=%LOCALAPPDATA%\OSS\bin"
 set "LAUNCHER=%BIN_DIR%\ytd.cmd"
+set "LAB_LAUNCHER=%BIN_DIR%\oss-lab.cmd"
 
 if exist "%LAUNCHER%" del /f /q "%LAUNCHER%"
+if exist "%LAB_LAUNCHER%" del /f /q "%LAB_LAUNCHER%"
 if exist "%INSTALL_DIR%" rmdir /s /q "%INSTALL_DIR%"
 
 echo OSS Downloader Core desinstalado.
@@ -175,6 +189,7 @@ Copy-Item -Path (Join-Path $RootDir "README.md") -Destination (Join-Path $Payloa
 Copy-Item -Path (Join-Path $RootDir "COPYRIGHT_AND_USAGE.md") -Destination (Join-Path $PayloadDir "COPYRIGHT_AND_USAGE.md") -Force
 Copy-Item -Path (Join-Path $RootDir "dependencies.json") -Destination (Join-Path $PayloadDir "dependencies.json") -Force
 Copy-Item -Path (Join-Path $RootDir "legal\THIRD_PARTY_NOTICES.md") -Destination (Join-Path $PayloadDir "legal\THIRD_PARTY_NOTICES.md") -Force
+Copy-Item -Path (Join-Path $RootDir "labs") -Destination (Join-Path $PayloadDir "labs") -Recurse -Force
 
 Write-InstallCmd $PayloadDir
 Write-UninstallCmd $PayloadDir

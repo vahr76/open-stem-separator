@@ -2,7 +2,7 @@
 set -euo pipefail
 
 APP_NAME="ytd"
-APP_VERSION="0.2.2"
+APP_VERSION="0.3.0"
 TARGET="linux-x64"
 PACKAGE_NAME="${APP_NAME}-${APP_VERSION}-${TARGET}"
 
@@ -48,18 +48,25 @@ copy_if_found() {
 build_app() {
   local python_bin="$1"
   if "$python_bin" -m PyInstaller --version >/dev/null 2>&1; then
-    "$python_bin" -m PyInstaller --onefile --name "$APP_NAME" --distpath "$PAYLOAD_DIR" --workpath "$DIST_DIR/build" --specpath "$DIST_DIR" "$ROOT_DIR/oss.py"
-    printf '%s\n' "Modo de app: binario PyInstaller"
+    "$python_bin" -m PyInstaller --onefile --name "$APP_NAME" --distpath "$PAYLOAD_DIR" --workpath "$DIST_DIR/build-ytd" --specpath "$DIST_DIR" "$ROOT_DIR/oss.py"
+    "$python_bin" -m PyInstaller --onefile --name oss-lab --distpath "$PAYLOAD_DIR" --workpath "$DIST_DIR/build-oss-lab" --specpath "$DIST_DIR" "$ROOT_DIR/oss_lab.py"
+    printf '%s\n' "Modo de app: binarios PyInstaller"
   elif command -v pyinstaller >/dev/null 2>&1; then
-    pyinstaller --onefile --name "$APP_NAME" --distpath "$PAYLOAD_DIR" --workpath "$DIST_DIR/build" --specpath "$DIST_DIR" "$ROOT_DIR/oss.py"
-    printf '%s\n' "Modo de app: binario PyInstaller"
+    pyinstaller --onefile --name "$APP_NAME" --distpath "$PAYLOAD_DIR" --workpath "$DIST_DIR/build-ytd" --specpath "$DIST_DIR" "$ROOT_DIR/oss.py"
+    pyinstaller --onefile --name oss-lab --distpath "$PAYLOAD_DIR" --workpath "$DIST_DIR/build-oss-lab" --specpath "$DIST_DIR" "$ROOT_DIR/oss_lab.py"
+    printf '%s\n' "Modo de app: binarios PyInstaller"
   else
     cp "$ROOT_DIR/oss.py" "$PAYLOAD_DIR/ytd.py"
+    cp "$ROOT_DIR/oss_lab.py" "$PAYLOAD_DIR/oss_lab.py"
     cat > "$PAYLOAD_DIR/ytd" <<'WRAPPER'
 #!/usr/bin/env sh
 exec python3 "$(dirname "$0")/ytd.py" "$@"
 WRAPPER
-    chmod +x "$PAYLOAD_DIR/ytd"
+    cat > "$PAYLOAD_DIR/oss-lab" <<'WRAPPER'
+#!/usr/bin/env sh
+exec python3 "$(dirname "$0")/oss_lab.py" "$@"
+WRAPPER
+    chmod +x "$PAYLOAD_DIR/ytd" "$PAYLOAD_DIR/oss-lab"
     printf '%s\n' "Modo de app: wrapper fuente; requiere Python 3."
   fi
 }
@@ -70,13 +77,14 @@ write_installers() {
 set -eu
 
 APP_NAME="ytd"
-APP_VERSION="0.2.2"
-PACKAGE_NAME="ytd-0.2.2-linux-x64"
+APP_VERSION="0.3.0"
+PACKAGE_NAME="ytd-0.3.0-linux-x64"
 SOURCE_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 INSTALL_ROOT="${OSS_INSTALL_ROOT:-$HOME/.local/share/oss}"
 INSTALL_DIR="$INSTALL_ROOT/$PACKAGE_NAME"
 BIN_DIR="${OSS_BIN_DIR:-$HOME/.local/bin}"
 LAUNCHER="$BIN_DIR/$APP_NAME"
+LAB_LAUNCHER="$BIN_DIR/oss-lab"
 
 mkdir -p "$INSTALL_DIR" "$BIN_DIR"
 cp -R "$SOURCE_DIR/." "$INSTALL_DIR/"
@@ -85,9 +93,15 @@ cat > "$LAUNCHER" <<EOF_LAUNCHER
 exec "$INSTALL_DIR/ytd" "\$@"
 EOF_LAUNCHER
 chmod +x "$LAUNCHER"
+cat > "$LAB_LAUNCHER" <<EOF_LAB
+#!/usr/bin/env sh
+exec "$INSTALL_DIR/oss-lab" "\$@"
+EOF_LAB
+chmod +x "$LAB_LAUNCHER"
 
 printf '%s\n' "OSS Downloader Core instalado."
 printf '%s\n' "Comando: $LAUNCHER"
+printf '%s\n' "Lab experimental: $LAB_LAUNCHER"
 printf '%s\n' "Si tu shell no lo encuentra, agregá $BIN_DIR a PATH."
 INSTALL
   chmod +x "$PAYLOAD_DIR/install.sh"
@@ -97,15 +111,19 @@ INSTALL
 set -eu
 
 APP_NAME="ytd"
-APP_VERSION="0.2.2"
-PACKAGE_NAME="ytd-0.2.2-linux-x64"
+APP_VERSION="0.3.0"
+PACKAGE_NAME="ytd-0.3.0-linux-x64"
 INSTALL_ROOT="${OSS_INSTALL_ROOT:-$HOME/.local/share/oss}"
 INSTALL_DIR="$INSTALL_ROOT/$PACKAGE_NAME"
 BIN_DIR="${OSS_BIN_DIR:-$HOME/.local/bin}"
 LAUNCHER="$BIN_DIR/$APP_NAME"
+LAB_LAUNCHER="$BIN_DIR/oss-lab"
 
 if [ -f "$LAUNCHER" ]; then
   rm -f "$LAUNCHER"
+fi
+if [ -f "$LAB_LAUNCHER" ]; then
+  rm -f "$LAB_LAUNCHER"
 fi
 if [ -d "$INSTALL_DIR" ]; then
   rm -rf "$INSTALL_DIR"
@@ -210,6 +228,7 @@ cp "$ROOT_DIR/README.md" "$PAYLOAD_DIR/README.md"
 cp "$ROOT_DIR/COPYRIGHT_AND_USAGE.md" "$PAYLOAD_DIR/COPYRIGHT_AND_USAGE.md"
 cp "$ROOT_DIR/dependencies.json" "$PAYLOAD_DIR/dependencies.json"
 cp "$ROOT_DIR/legal/THIRD_PARTY_NOTICES.md" "$PAYLOAD_DIR/legal/THIRD_PARTY_NOTICES.md"
+cp -R "$ROOT_DIR/labs" "$PAYLOAD_DIR/labs"
 
 write_installers
 write_manifest

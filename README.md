@@ -118,3 +118,22 @@ La política de versionado del proyecto está en `docs/VERSIONING.md`. Durante l
 - https://github.com/yt-dlp/yt-dlp/wiki/EJS
 
 La distribución de binarios tiene dependencias y licencias propias; gratis y redistribuible no son equivalentes. Revisar los avisos de cada versión antes de publicar paquetes.
+
+
+## Experimental OSS lab
+
+Starting with the 0.3.0 development line, packages can include an experimental `oss-lab` command next to `ytd`.
+
+`ytd` remains the downloader core. `oss-lab` is for separation experiments, benchmarks, measurements, REAPER project export and run comparisons while the separation engine is still being evaluated.
+
+Examples:
+
+```sh
+oss-lab benchmark --dry-run --max-items 1
+oss-lab separate --config labs/separation/configs/demucs-htdemucs.json --input /path/to/audio.wav --out /tmp/oss-lab
+oss-lab measure /path/to/lab-run
+oss-lab reaper /path/to/lab-run
+oss-lab compare /path/to/direct-run /path/to/cascade-run --label direct --label cascade --out /tmp/oss-compare
+```
+
+The lab currently covers Demucs direct/cascade candidates. BS-RoFormer, MelBand RoFormer, MDX and six-stem models are tracked as candidates but are not yet validated in this repo.

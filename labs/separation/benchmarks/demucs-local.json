@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "name": "demucs-local",
+  "description": "Local Demucs benchmark across direct and cascade candidates. This does not cover BS-RoFormer, MelBand or MDX yet.",
+  "clip_seconds": 20,
+  "sample_rate": 44100,
+  "channels": 2,
+  "items": [
+    {
+      "id": "blur-beetlebum",
+      "label": "Blur - Beetlebum",
+      "source": "/home/ahermosa/Music/OSS/downloads/Blur/Beetlebum/Blur_-_Beetlebum_Official_Music_Video - audio.flac",
+      "start": 45,
+      "notes": "Dense rock mix, useful for guitar/bass/drums bleed checks."
+    },
+    {
+      "id": "iron-butterfly-in-a-gadda-da-vida",
+      "label": "Iron Butterfly - In-A-Gadda-Da-Vida",
+      "source": "/home/ahermosa/Music/OSS/downloads/IRON_BUTTERFLY_-_IN_A_GADDA_DA_VIDA_-_1968_ORIGINAL_FULL_VERSION_CD_SOUND_3D_VIDEO - audio.flac",
+      "start": 60,
+      "notes": "Long classic rock track, useful for bass and drum separation checks."
+    },
+    {
+      "id": "elis-jobim-aguas-de-marco",
+      "label": "Elis Regina & Tom Jobim - Águas de Março",
+      "source": "/home/ahermosa/Music/OSS/downloads/Elis_Regina_Tom_Jobim_-_Aguas_de_Marco_-_1974 [E1tOV7y94DY].flac",
+      "start": 30,
+      "notes": "Voice-focused MPB/bossa performance, useful for vocal/instrumental bleed checks."
+    }
+  ],
+  "configs": [
+    "labs/separation/configs/demucs-htdemucs.json",
+    "labs/separation/configs/demucs-htdemucs-ft.json",
+    "labs/separation/configs/demucs-hdemucs-mmi.json",
+    "labs/separation/configs/demucs-vocal-then-instrumental.json"
+  ]
+}
