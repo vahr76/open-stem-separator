@@ -125,6 +125,39 @@ class CoreTests(unittest.TestCase):
             self.assertEqual(manifest['notes'], existing['notes'])
             self.assertIn('updated_at', manifest)
 
+
+    def test_register_project_media_records_downloaded_files(self):
+        with tempfile.TemporaryDirectory() as directory:
+            project = oss.create_project('https://example.org/song', directory, {
+                'title': 'Artist - Track',
+                'webpage_url': 'https://example.org/song',
+                'id': 'abc',
+            })
+            media_file = project / 'Artist_-_Track.flac'
+            media_file.write_bytes(b'audio')
+            self.assertTrue(oss.register_project_media(project, 'flac', 'shortcut'))
+            manifest = json.loads((project / 'project.json').read_text(encoding='utf-8'))
+            self.assertEqual(len(manifest['media']), 1)
+            self.assertEqual(manifest['media'][0]['path'], 'Artist_-_Track.flac')
+            self.assertEqual(manifest['media'][0]['kind'], 'audio')
+            self.assertEqual(manifest['media'][0]['profile'], 'flac')
+            self.assertEqual(manifest['media'][0]['role'], 'shortcut')
+            self.assertEqual(manifest['media'][0]['size'], 5)
+
+    def test_register_project_media_deduplicates_and_ignores_metadata(self):
+        with tempfile.TemporaryDirectory() as directory:
+            project = oss.create_project('https://example.org/song', directory, {'title': 'Artist - Track'})
+            (project / 'metadata.json').write_text('{}', encoding='utf-8')
+            (project / 'project.json.part').write_text('partial', encoding='utf-8')
+            media_file = project / 'video.mkv'
+            media_file.write_bytes(b'video')
+            self.assertTrue(oss.register_project_media(project, 'video', 'both-video'))
+            self.assertFalse(oss.register_project_media(project, 'video', 'both-video'))
+            manifest = json.loads((project / 'project.json').read_text(encoding='utf-8'))
+            self.assertEqual(len(manifest['media']), 1)
+            self.assertEqual(manifest['media'][0]['path'], 'video.mkv')
+            self.assertEqual(manifest['media'][0]['kind'], 'video')
+
     def test_invalid_urls(self):
         for url in ('file:///tmp/song', '--exec=bad', 'https://', 'https://u:p@example.org'):
             with self.subTest(url=url), self.assertRaises(ValueError):

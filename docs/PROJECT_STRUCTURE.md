@@ -84,7 +84,16 @@ Initial shape:
     "confidence": "medium",
     "source": "title"
   },
-  "media": [],
+  "media": [
+    {
+      "path": "Artist_-_Track.flac",
+      "kind": "audio",
+      "profile": "flac",
+      "role": "shortcut",
+      "size": 123456,
+      "modified_at": "2026-09-24T00:00:00Z"
+    }
+  ],
   "stems": [],
   "analysis": {},
   "lyrics": {},
@@ -105,6 +114,13 @@ Initial shape:
 - artist/track guess and confidence.
 
 `project.json` should reference the clean identity and OSS state. `metadata.json` should preserve source metadata useful for debugging or later enrichment.
+
+
+## Media registration
+
+When a download completes successfully, `ytd` scans the project root for final media files and records them in `project.json["media"]`. It ignores `metadata.json`, `project.json`, partial files and temporary files. Existing media entries are deduplicated by relative path so rerunning a command does not create duplicate records.
+
+This is intentionally conservative: files are not moved into nested folders yet. The manifest records what exists today while keeping the folder layout backward-compatible.
 
 ## Downloads and originals
 

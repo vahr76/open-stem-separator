@@ -260,6 +260,8 @@ def history_entry(url, profile, project_dir=None, status='ok', code=0, kind=None
 
 def run_tracked(url, profile, project_dir, label=None, kind=None):
     code = run(command(url, profile, output=project_dir, label=label))
+    if code == 0:
+        register_project_media(project_dir, profile, kind)
     append_history(history_entry(url, profile, project_dir, 'ok' if code == 0 else 'error', code, kind))
     return code
 
@@ -268,6 +270,8 @@ def run_many_tracked(entries):
     final_code = 0
     for item in entries:
         code = run(command(item['url'], item['profile'], output=item['project_dir'], label=item.get('label')))
+        if code == 0:
+            register_project_media(item['project_dir'], item['profile'], item.get('kind'))
         append_history(history_entry(item['url'], item['profile'], item['project_dir'], 'ok' if code == 0 else 'error', code, item.get('kind')))
         if code:
             final_code = code
@@ -538,6 +542,75 @@ def initial_project_manifest(url, info, guess, existing=None):
         'notes': existing.get('notes') if isinstance(existing.get('notes'), list) else [],
     }
     return manifest
+
+
+MEDIA_EXTENSIONS = {
+    '.aac', '.aiff', '.alac', '.ape', '.flac', '.m4a', '.mka', '.mp3', '.ogg', '.opus', '.wav', '.webm',
+    '.avi', '.m4v', '.mkv', '.mov', '.mp4', '.mpeg', '.mpg'
+}
+AUDIO_EXTENSIONS = {'.aac', '.aiff', '.alac', '.ape', '.flac', '.m4a', '.mka', '.mp3', '.ogg', '.opus', '.wav', '.webm'}
+VIDEO_EXTENSIONS = {'.avi', '.m4v', '.mkv', '.mov', '.mp4', '.mpeg', '.mpg'}
+
+
+def media_kind(path):
+    suffix = Path(path).suffix.lower()
+    if suffix in VIDEO_EXTENSIONS:
+        return 'video'
+    if suffix in AUDIO_EXTENSIONS:
+        return 'audio'
+    return 'media'
+
+
+def project_media_files(project_dir):
+    project_dir = Path(project_dir)
+    if not project_dir.is_dir():
+        return []
+    files = []
+    for path in sorted(project_dir.iterdir()):
+        if not path.is_file():
+            continue
+        if path.name in ('metadata.json', 'project.json'):
+            continue
+        if path.name.endswith(('.part', '.ytdl', '.tmp')):
+            continue
+        if path.suffix.lower() in MEDIA_EXTENSIONS:
+            files.append(path)
+    return files
+
+
+def register_project_media(project_dir, profile=None, kind=None):
+    project_dir = Path(project_dir)
+    project_path = project_dir / 'project.json'
+    manifest = read_json_object(project_path)
+    if not manifest:
+        return False
+    existing_media = manifest.get('media') if isinstance(manifest.get('media'), list) else []
+    by_path = {item.get('path'): item for item in existing_media if isinstance(item, dict) and item.get('path')}
+    changed = False
+    for path in project_media_files(project_dir):
+        relative = path.relative_to(project_dir).as_posix()
+        stat = path.stat()
+        item = by_path.get(relative, {})
+        updated = {
+            **item,
+            'path': relative,
+            'kind': item.get('kind') or media_kind(path),
+            'profile': item.get('profile') or profile,
+            'role': item.get('role') or kind,
+            'size': stat.st_size,
+            'modified_at': datetime.fromtimestamp(stat.st_mtime, timezone.utc).isoformat(),
+        }
+        if updated != item:
+            by_path[relative] = updated
+            changed = True
+    ordered = [by_path[key] for key in sorted(by_path)]
+    if ordered != existing_media:
+        manifest['media'] = ordered
+        changed = True
+    if changed:
+        manifest['updated_at'] = datetime.now(timezone.utc).isoformat()
+        write_json(project_path, manifest)
+    return changed
 
 
 def create_project(url, download_root=None, info=None):
@@ -864,9 +937,7 @@ def main(argv=None):
                 print(json.dumps(args, ensure_ascii=False, indent=2))
                 return 0
             print(f'Proyecto: {project_dir}')
-            code = run(args)
-            append_history(history_entry(url, profile, project_dir, 'ok' if code == 0 else 'error', code, 'shortcut'))
-            return code
+            return run_tracked(url, profile, project_dir, kind='shortcut')
         except (ValueError, OSError) as exc:
             print(f'OSS: {exc}', file=sys.stderr)
             return 1
@@ -941,6 +1012,8 @@ def main(argv=None):
             return 0
         code = run(args)
         if ns.action == 'download':
+            if code == 0 and ns.output and (Path(ns.output) / 'project.json').is_file():
+                register_project_media(ns.output, ns.profile, 'download')
             append_history(history_entry(ns.url, ns.profile, ns.output, 'ok' if code == 0 else 'error', code, 'download'))
         return code
     except (ValueError, OSError) as exc:
