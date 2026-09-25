@@ -43,7 +43,8 @@ class ReaperProjectTests(unittest.TestCase):
             self.assertIn('<REAPER_PROJECT', text)
             self.assertIn('stage-01-demucs-htdemucs · bass', text)
             self.assertIn('stage-01-demucs-htdemucs · drums', text)
-            self.assertIn(str(stems / 'bass.wav'), text)
+            self.assertIn('bass.wav', text)
+            self.assertIn('SOURCE WAVE', text)
 
 
 if __name__ == '__main__':

@@ -24,9 +24,13 @@ class OssLabCliTests(unittest.TestCase):
 
     def test_benchmark_dry_run_command(self):
         with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / 'source.flac'
+            source.write_bytes(b'fake source')
+            benchmark = Path(tmp) / 'benchmark.json'
+            benchmark.write_text('{\n  "schema": 1,\n  "name": "cli-test",\n  "items": [{"id": "item", "label": "Item", "source": "' + str(source).replace('\\', '\\\\') + '"}],\n  "configs": ["labs/separation/configs/demucs-htdemucs.json"]\n}\n', encoding='utf-8')
             status = oss_lab.main([
                 'benchmark',
-                '--benchmark', str(REPO_ROOT / 'labs' / 'separation' / 'benchmarks' / 'minimal-local.json'),
+                '--benchmark', str(benchmark),
                 '--out', tmp,
                 '--dry-run',
                 '--max-items', '1',
