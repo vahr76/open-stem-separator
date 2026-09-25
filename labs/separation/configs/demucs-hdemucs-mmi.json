@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "name": "demucs-hdemucs-mmi-direct",
+  "mode": "direct",
+  "description": "Direct Demucs hdemucs_mmi candidate, especially relevant for bass comparison.",
+  "stages": [
+    {
+      "id": "stage-01-demucs-hdemucs-mmi",
+      "engine": "demucs",
+      "model": "hdemucs_mmi",
+      "role": "direct-multistem",
+      "input": "original",
+      "device": "auto",
+      "outputs": ["vocals", "drums", "bass", "other"]
+    }
+  ]
+}

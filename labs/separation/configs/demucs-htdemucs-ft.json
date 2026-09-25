@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "name": "demucs-htdemucs-ft-direct",
+  "mode": "direct",
+  "description": "Direct Demucs htdemucs_ft four-stem quality candidate on the original audio.",
+  "stages": [
+    {
+      "id": "stage-01-demucs-htdemucs-ft",
+      "engine": "demucs",
+      "model": "htdemucs_ft",
+      "role": "direct-multistem",
+      "input": "original",
+      "device": "auto",
+      "outputs": ["vocals", "drums", "bass", "other"]
+    }
+  ]
+}

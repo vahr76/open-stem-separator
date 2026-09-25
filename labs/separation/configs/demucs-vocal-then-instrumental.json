@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "name": "demucs-vocal-then-instrumental",
+  "mode": "cascade",
+  "description": "Experimental two-stage cascade: first split vocals/no-vocals, then separate the no-vocals intermediate into instrumental stems.",
+  "stages": [
+    {
+      "id": "stage-01-vocal-instrumental",
+      "engine": "demucs",
+      "model": "htdemucs_ft",
+      "role": "vocal-instrumental",
+      "input": "original",
+      "device": "auto",
+      "two_stems": "vocals",
+      "float32": true,
+      "outputs": ["vocals", "no_vocals"]
+    },
+    {
+      "id": "stage-02-instrumental-stems",
+      "engine": "demucs",
+      "model": "htdemucs_ft",
+      "role": "instrumental-multistem",
+      "input": "stage:stage-01-vocal-instrumental:stems/**/no_vocals.wav",
+      "device": "auto",
+      "float32": true,
+      "outputs": ["drums", "bass", "other", "vocals-residual"]
+    }
+  ]
+}

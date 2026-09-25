@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "name": "demucs-htdemucs-direct",
+  "mode": "direct",
+  "description": "Direct Demucs htdemucs four-stem baseline on the original audio.",
+  "stages": [
+    {
+      "id": "stage-01-demucs-htdemucs",
+      "engine": "demucs",
+      "model": "htdemucs",
+      "role": "direct-multistem",
+      "input": "original",
+      "device": "auto",
+      "outputs": ["vocals", "drums", "bass", "other"]
+    }
+  ]
+}
