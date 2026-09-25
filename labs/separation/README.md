@@ -106,6 +106,30 @@ python3 labs/separation/tools/benchmark.py \
 The benchmark writes `benchmark.json`, `REPORT.md`, generated clips and full lab runs. Listening notes stay manual for now because the decision we need first is perceptual: direct model versus cascade.
 
 
+
+## Objective run measurements
+
+Listening remains required, but each run can be measured for technical consistency:
+
+```sh
+python3 labs/separation/tools/measure_run.py /path/to/lab-run
+```
+
+The measurement writes:
+
+- `measurement.json`
+- `MEASUREMENT.md`
+- `reconstruction_residual.wav`, calculated as original minus the selected final stems
+
+For reconstruction residual, more negative dB values are better because they mean the summed stems are closer to the original. This is not a perceptual quality score; it does not prove bass clarity, vocal bleed or artifact quality. It only tells us how much signal remains after summing the selected outputs.
+
+In the first Blur test, direct Demucs measured better than the cascade for reconstruction consistency:
+
+```text
+direct htdemucs: -30.49 dB residual vs original
+cascade:        -18.66 dB residual vs original
+```
+
 ## Listening in REAPER
 
 The lab can generate a simple `.rpp` session from any separation run. Each stem is imported as an aligned track starting at zero.
