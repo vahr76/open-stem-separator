@@ -105,6 +105,24 @@ python3 labs/separation/tools/benchmark.py \
 
 The benchmark writes `benchmark.json`, `REPORT.md`, generated clips and full lab runs. Listening notes stay manual for now because the decision we need first is perceptual: direct model versus cascade.
 
+
+## Listening in REAPER
+
+The lab can generate a simple `.rpp` session from any separation run. Each stem is imported as an aligned track starting at zero.
+
+```sh
+python3 labs/separation/tools/reaper_project.py /path/to/lab-run
+```
+
+For the first Blur benchmark, the generated projects were:
+
+```text
+/tmp/oss-benchmark-real-one/2026-09-25T021903.895843Z-minimal-local/runs/blur-beetlebum/20260925-021904-demucs-htdemucs-direct/20260925-021904-demucs-htdemucs-direct.rpp
+/tmp/oss-benchmark-real-one/2026-09-25T021903.895843Z-minimal-local/runs/blur-beetlebum/20260925-021915-demucs-vocal-then-instrumental/20260925-021915-demucs-vocal-then-instrumental.rpp
+```
+
+Use REAPER here as a reference listening environment. The OSS player can later borrow the useful workflow ideas: aligned stems, mute/solo, level controls, residual tracks, waveform overview, markers and simple export.
+
 ## Output layout
 
 ```text
