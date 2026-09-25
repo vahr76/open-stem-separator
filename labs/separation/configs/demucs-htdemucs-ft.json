@@ -11,7 +11,18 @@
       "role": "direct-multistem",
       "input": "original",
       "device": "auto",
-      "outputs": ["vocals", "drums", "bass", "other"]
+      "outputs": [
+        "vocals",
+        "drums",
+        "bass",
+        "other"
+      ],
+      "expected_stems": [
+        "vocals",
+        "drums",
+        "bass",
+        "other"
+      ]
     }
   ]
 }

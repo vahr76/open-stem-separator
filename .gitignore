@@ -16,3 +16,4 @@ Thumbs.db
 # Local generated artifacts that should not be committed from this package root
 /outputs/
 
+.venv-separation/

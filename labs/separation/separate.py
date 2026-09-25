@@ -14,6 +14,7 @@ from pathlib import Path
 import subprocess
 import sys
 from datetime import datetime, timezone
+import time
 
 
 def utc_now() -> str:
@@ -103,6 +104,7 @@ def run_stage(stage: dict, input_path: Path, run_dir: Path, dry_run: bool = Fals
     stage_dir = run_dir / stage_id
     stage_dir.mkdir(parents=True, exist_ok=False)
     started_at = utc_now()
+    started_monotonic = time.monotonic()
     engine = stage.get('engine')
     status = 'dry-run' if dry_run else 'ok'
     command: list[str]
@@ -127,6 +129,7 @@ def run_stage(stage: dict, input_path: Path, run_dir: Path, dry_run: bool = Fals
             (stage_dir / 'stderr.log').write_text(stderr, encoding='utf-8')
 
     finished_at = utc_now()
+    elapsed_seconds = round(time.monotonic() - started_monotonic, 3)
     outputs = []
     stems_dir = stage_dir / 'stems'
     if stems_dir.exists():
@@ -137,6 +140,12 @@ def run_stage(stage: dict, input_path: Path, run_dir: Path, dry_run: bool = Fals
                     'size': path.stat().st_size,
                     'sha256': sha256(path),
                 })
+
+    expected_stems = stage.get('expected_stems') or stage.get('outputs') or []
+    present_stems = {Path(output['path']).stem for output in outputs}
+    missing_outputs = [] if dry_run else sorted(stem for stem in expected_stems if stem not in present_stems)
+    if not dry_run and returncode == 0 and missing_outputs:
+        status = 'error'
 
     stage_manifest = {
         'schema': 1,
@@ -151,6 +160,9 @@ def run_stage(stage: dict, input_path: Path, run_dir: Path, dry_run: bool = Fals
         'returncode': returncode,
         'started_at': started_at,
         'finished_at': finished_at,
+        'elapsed_seconds': elapsed_seconds,
+        'expected_stems': expected_stems,
+        'missing_outputs': missing_outputs,
         'outputs': outputs,
     }
     write_json(stage_dir / 'stage.json', stage_manifest)
@@ -162,6 +174,9 @@ def run_stage(stage: dict, input_path: Path, run_dir: Path, dry_run: bool = Fals
         'status': status,
         'returncode': returncode,
         'path': str(stage_dir.relative_to(run_dir)),
+        'elapsed_seconds': elapsed_seconds,
+        'expected_stems': expected_stems,
+        'missing_outputs': missing_outputs,
         'outputs': outputs,
     }
 
@@ -204,7 +219,7 @@ def run_lab(config_path: Path, input_path: Path, out_root: Path, dry_run: bool =
             stage_result = run_stage(stage, current_input, run_dir, dry_run)
             manifest['stages'].append(stage_result)
             write_json(run_dir / 'manifest.json', manifest)
-            if stage_result['returncode']:
+            if stage_result['returncode'] or stage_result.get('missing_outputs'):
                 break
         completed = True
     finally:

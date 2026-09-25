@@ -13,7 +13,14 @@
       "device": "auto",
       "two_stems": "vocals",
       "float32": true,
-      "outputs": ["vocals", "no_vocals"]
+      "outputs": [
+        "vocals",
+        "no_vocals"
+      ],
+      "expected_stems": [
+        "vocals",
+        "no_vocals"
+      ]
     },
     {
       "id": "stage-02-instrumental-stems",
@@ -23,7 +30,24 @@
       "input": "stage:stage-01-vocal-instrumental:stems/**/no_vocals.wav",
       "device": "auto",
       "float32": true,
-      "outputs": ["drums", "bass", "other", "vocals-residual"]
+      "outputs": [
+        "drums",
+        "bass",
+        "other",
+        "vocals-residual"
+      ],
+      "expected_stems": [
+        "drums",
+        "bass",
+        "other",
+        "vocals"
+      ],
+      "output_roles": {
+        "drums": "final-drums",
+        "bass": "final-bass",
+        "other": "final-other",
+        "vocals": "residual-vocals"
+      }
     }
   ]
 }
