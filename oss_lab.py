@@ -8,8 +8,15 @@ separation stack is still experimental.
 from __future__ import annotations
 
 import argparse
+from array import array as _pyinstaller_array
+import json as _pyinstaller_json
+import math as _pyinstaller_math
 from pathlib import Path
+import shutil as _pyinstaller_shutil
+import subprocess as _pyinstaller_subprocess
 import sys
+import tempfile as _pyinstaller_tempfile
+import wave as _pyinstaller_wave
 
 if getattr(sys, 'frozen', False):
     REPO_ROOT = Path(sys.executable).resolve().parent
