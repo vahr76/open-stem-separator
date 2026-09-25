@@ -79,6 +79,32 @@ python3 labs/separation/separate.py \
 
 In real cascade mode the second stage resolves its input from the first stage with a reference like `stage:stage-01-vocal-instrumental:stems/**/no_vocals.wav`.
 
+
+## Minimal benchmark
+
+The first benchmark harness compares the direct baseline and the cascade on local excerpts.
+
+Dry-run the benchmark structure without running Demucs:
+
+```sh
+python3 labs/separation/tools/benchmark.py \
+  --benchmark labs/separation/benchmarks/minimal-local.json \
+  --out /tmp/oss-separation-benchmark \
+  --dry-run
+```
+
+Run only the first excerpt, useful on CPU:
+
+```sh
+. .venv-separation/bin/activate
+python3 labs/separation/tools/benchmark.py \
+  --benchmark labs/separation/benchmarks/minimal-local.json \
+  --out /tmp/oss-separation-benchmark \
+  --max-items 1
+```
+
+The benchmark writes `benchmark.json`, `REPORT.md`, generated clips and full lab runs. Listening notes stay manual for now because the decision we need first is perceptual: direct model versus cascade.
+
 ## Output layout
 
 ```text
