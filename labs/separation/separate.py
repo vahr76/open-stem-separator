@@ -71,14 +71,49 @@ def engine_python() -> str:
     return sys.executable
 
 
-def demucs_command(stage: dict, input_path: Path, stage_dir: Path) -> list[str]:
+def detect_torch_device(python_executable: str) -> str:
+    override = os.environ.get('OSS_LAB_DEVICE')
+    if override:
+        normalized = override.strip().lower()
+        if normalized in {'cuda', 'cpu', 'mps'} or normalized.startswith('cuda:'):
+            return normalized
+        if normalized != 'auto':
+            raise ValueError('OSS_LAB_DEVICE must be auto, cuda, cuda:N, cpu or mps')
+
+    probe = subprocess.run(
+        [
+            python_executable,
+            '-c',
+            'import torch; print("cuda" if torch.cuda.is_available() else "cpu")',
+        ],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+    if probe.returncode == 0:
+        detected = (probe.stdout or '').strip().splitlines()[-1:]
+        if detected and detected[0] in {'cuda', 'cpu'}:
+            return detected[0]
+    return 'cpu'
+
+
+def stage_device(stage: dict, python_executable: str) -> str | None:
+    requested = stage.get('device') or 'auto'
+    if requested == 'auto':
+        return detect_torch_device(python_executable)
+    return str(requested)
+
+
+def demucs_command(stage: dict, input_path: Path, stage_dir: Path) -> tuple[list[str], str | None]:
     model = stage.get('model')
     if not model:
         raise ValueError('Demucs stage requires model')
-    command = [engine_python(), '-m', 'demucs', '-n', model, '-o', str(stage_dir / 'stems')]
-    device = stage.get('device')
-    if device and device != 'auto':
-        command += ['-d', str(device)]
+    python_executable = engine_python()
+    command = [python_executable, '-m', 'demucs', '-n', model, '-o', str(stage_dir / 'stems')]
+    device = stage_device(stage, python_executable)
+    if device:
+        command += ['-d', device]
     two_stems = stage.get('two_stems')
     if two_stems:
         command += ['--two-stems', str(two_stems)]
@@ -89,7 +124,7 @@ def demucs_command(stage: dict, input_path: Path, stage_dir: Path) -> list[str]:
     if stage.get('float32'):
         command.append('--float32')
     command.append(str(input_path))
-    return command
+    return command, device
 
 
 def resolve_stage_input(stage: dict, original_input: Path, run_dir: Path, dry_run: bool) -> Path:
@@ -121,12 +156,13 @@ def run_stage(stage: dict, input_path: Path, run_dir: Path, dry_run: bool = Fals
     engine = stage.get('engine')
     status = 'dry-run' if dry_run else 'ok'
     command: list[str]
+    effective_device: str | None = None
     stdout = ''
     stderr = ''
     returncode = 0
 
     if engine == 'demucs':
-        command = demucs_command(stage, input_path, stage_dir)
+        command, effective_device = demucs_command(stage, input_path, stage_dir)
     else:
         raise ValueError(f'Unsupported engine: {engine}')
 
@@ -168,6 +204,8 @@ def run_stage(stage: dict, input_path: Path, run_dir: Path, dry_run: bool = Fals
         'role': stage.get('role'),
         'input': str(input_path),
         'command': command,
+        'requested_device': stage.get('device') or 'auto',
+        'effective_device': effective_device,
         'dry_run': dry_run,
         'status': status,
         'returncode': returncode,
@@ -187,6 +225,8 @@ def run_stage(stage: dict, input_path: Path, run_dir: Path, dry_run: bool = Fals
         'status': status,
         'returncode': returncode,
         'path': str(stage_dir.relative_to(run_dir)),
+        'requested_device': stage.get('device') or 'auto',
+        'effective_device': effective_device,
         'elapsed_seconds': elapsed_seconds,
         'expected_stems': expected_stems,
         'missing_outputs': missing_outputs,

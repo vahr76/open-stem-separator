@@ -21,6 +21,7 @@ Implemented now:
 - JSON configs;
 - `separate.py` CLI;
 - Demucs subprocess runner;
+- automatic Demucs device selection with CUDA preference;
 - direct and two-stage cascade configs;
 - stage-to-stage input references;
 - dry-run mode that writes a manifest without requiring Demucs;
@@ -51,6 +52,35 @@ Then run a direct Demucs experiment:
 
 ```sh
 python3 labs/separation/separate.py \
+  --config labs/separation/configs/demucs-htdemucs.json \
+  --input /path/to/audio.flac \
+  --out /tmp/oss-separation-lab
+```
+
+## Device selection
+
+Lab configs use `"device": "auto"` by default. In that mode OSS asks the Python environment that will run Demucs whether PyTorch can use CUDA. If CUDA is available, the generated Demucs command includes `-d cuda`; otherwise it includes `-d cpu`. The selected value is recorded in every `stage.json` as `requested_device` and `effective_device`.
+
+You can force a device for reproducible tests:
+
+```sh
+OSS_LAB_DEVICE=cuda:0 python3 oss_lab.py separate \
+  --config labs/separation/configs/demucs-htdemucs.json \
+  --input /path/to/audio.flac \
+  --out /tmp/oss-separation-lab
+
+OSS_LAB_DEVICE=cpu python3 oss_lab.py separate \
+  --config labs/separation/configs/demucs-htdemucs.json \
+  --input /path/to/audio.flac \
+  --out /tmp/oss-separation-lab
+```
+
+Packaged `oss-lab` can also use an external ML environment:
+
+```sh
+OSS_LAB_PYTHON=/path/to/.venv-separation/bin/python \
+OSS_LAB_DEVICE=auto \
+oss-lab separate \
   --config labs/separation/configs/demucs-htdemucs.json \
   --input /path/to/audio.flac \
   --out /tmp/oss-separation-lab

@@ -65,6 +65,33 @@ class SeparationLabTests(unittest.TestCase):
         with unittest.mock.patch.dict('os.environ', {'OSS_LAB_PYTHON': '/custom/python'}):
             self.assertEqual(separation.engine_python(), '/custom/python')
 
+    def test_auto_device_prefers_cuda_when_torch_reports_cuda(self):
+        completed = unittest.mock.Mock(returncode=0, stdout='cuda\n')
+        with unittest.mock.patch('subprocess.run', return_value=completed):
+            self.assertEqual(separation.detect_torch_device('/custom/python'), 'cuda')
+
+    def test_auto_device_falls_back_to_cpu_when_probe_fails(self):
+        completed = unittest.mock.Mock(returncode=1, stdout='')
+        with unittest.mock.patch('subprocess.run', return_value=completed):
+            self.assertEqual(separation.detect_torch_device('/custom/python'), 'cpu')
+
+    def test_lab_device_override_forces_cuda_without_probe(self):
+        with unittest.mock.patch.dict('os.environ', {'OSS_LAB_DEVICE': 'cuda:0'}):
+            with unittest.mock.patch('subprocess.run') as run:
+                self.assertEqual(separation.detect_torch_device('/custom/python'), 'cuda:0')
+                run.assert_not_called()
+
+    def test_demucs_auto_device_is_written_to_command(self):
+        with unittest.mock.patch('subprocess.run', return_value=unittest.mock.Mock(returncode=0, stdout='cuda\n')):
+            command, device = separation.demucs_command(
+                {'engine': 'demucs', 'model': 'htdemucs', 'device': 'auto'},
+                Path('/tmp/song.flac'),
+                Path('/tmp/run'),
+            )
+        self.assertEqual(device, 'cuda')
+        self.assertIn('-d', command)
+        self.assertIn('cuda', command)
+
     def test_missing_input_is_rejected_before_run_directory(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
