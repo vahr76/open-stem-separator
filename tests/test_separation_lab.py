@@ -65,6 +65,27 @@ class SeparationLabTests(unittest.TestCase):
         with unittest.mock.patch.dict('os.environ', {'OSS_LAB_PYTHON': '/custom/python'}):
             self.assertEqual(separation.engine_python(), '/custom/python')
 
+    def test_engine_subprocess_env_removes_pyinstaller_library_path(self):
+        with unittest.mock.patch.dict('os.environ', {
+            'LD_LIBRARY_PATH': '/tmp/_MEIabc123',
+            '_PYI_APPLICATION_HOME_DIR': '/tmp/_MEIabc123',
+            'PYTHONHOME': '/bad/pythonhome',
+            'KEEP_ME': 'yes',
+        }, clear=True):
+            env = separation.engine_subprocess_env()
+        self.assertNotIn('LD_LIBRARY_PATH', env)
+        self.assertNotIn('_PYI_APPLICATION_HOME_DIR', env)
+        self.assertNotIn('PYTHONHOME', env)
+        self.assertEqual(env['KEEP_ME'], 'yes')
+
+    def test_engine_subprocess_env_restores_original_ld_library_path(self):
+        with unittest.mock.patch.dict('os.environ', {
+            'LD_LIBRARY_PATH': '/tmp/_MEIabc123',
+            'LD_LIBRARY_PATH_ORIG': '/usr/lib',
+        }, clear=True):
+            env = separation.engine_subprocess_env()
+        self.assertEqual(env['LD_LIBRARY_PATH'], '/usr/lib')
+
     def test_auto_device_prefers_cuda_when_torch_reports_cuda(self):
         completed = unittest.mock.Mock(returncode=0, stdout='cuda\n')
         with unittest.mock.patch('subprocess.run', return_value=completed):

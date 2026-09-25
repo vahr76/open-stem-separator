@@ -71,6 +71,20 @@ def engine_python() -> str:
     return sys.executable
 
 
+
+def engine_subprocess_env() -> dict[str, str]:
+    env = os.environ.copy()
+    for key in list(env):
+        if key.startswith('_PYI_'):
+            env.pop(key, None)
+    if env.get('LD_LIBRARY_PATH', '').startswith('/tmp/_MEI'):
+        env.pop('LD_LIBRARY_PATH', None)
+    original_ld_path = env.pop('LD_LIBRARY_PATH_ORIG', None)
+    if original_ld_path:
+        env['LD_LIBRARY_PATH'] = original_ld_path
+    env.pop('PYTHONHOME', None)
+    return env
+
 def detect_torch_device(python_executable: str) -> str:
     override = os.environ.get('OSS_LAB_DEVICE')
     if override:
@@ -90,6 +104,7 @@ def detect_torch_device(python_executable: str) -> str:
         stdout=subprocess.PIPE,
         stderr=subprocess.DEVNULL,
         check=False,
+        env=engine_subprocess_env(),
     )
     if probe.returncode == 0:
         detected = (probe.stdout or '').strip().splitlines()[-1:]
@@ -167,7 +182,14 @@ def run_stage(stage: dict, input_path: Path, run_dir: Path, dry_run: bool = Fals
         raise ValueError(f'Unsupported engine: {engine}')
 
     if not dry_run:
-        completed = subprocess.run(command, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+        completed = subprocess.run(
+            command,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+            env=engine_subprocess_env(),
+        )
         stdout = completed.stdout or ''
         stderr = completed.stderr or ''
         returncode = completed.returncode
