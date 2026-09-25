@@ -175,6 +175,25 @@ ytd last
 
 Shows the last registered download in a readable form.
 
+
+### Show project summary
+
+```sh
+ytd project
+ytd project last
+ytd project '/path/to/project'
+```
+
+Shows a readable summary from `project.json`:
+
+- project folder;
+- artist and track identity;
+- source URL;
+- registered media files;
+- stem, analysis and lyrics counts.
+
+`ytd project` and `ytd project last` use the last project recorded in history.
+
 ### Open last project folder
 
 ```sh

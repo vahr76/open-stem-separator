@@ -33,8 +33,8 @@ On each target Linux machine, download the release tarball and run:
 mkdir -p /tmp/oss-linux-test
 cd /tmp/oss-linux-test
 
-tar -xzf /path/to/ytd-0.2.1-linux-x64.tar.gz
-cd ytd-0.2.1-linux-x64
+tar -xzf /path/to/ytd-0.2.2-linux-x64.tar.gz
+cd ytd-0.2.2-linux-x64
 
 ./ytd doctor
 ./install.sh

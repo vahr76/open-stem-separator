@@ -24,6 +24,7 @@ ytd history
 ytd last
 ytd config
 ytd open
+ytd project
 ```
 
 El instalador crea el comando `ytd` en una carpeta de comandos de usuario. En Linux/macOS el valor predeterminado es `~/.local/bin`; en Windows se crea `ytd.cmd`.
@@ -56,6 +57,8 @@ Comandos de comodidad:
 ytd config          # muestra config, descargas, historial y miniaturas
 ytd last            # muestra la última descarga registrada
 ytd open            # abre el último proyecto; si no hay historial abre descargas
+ytd project         # muestra resumen del último proyecto OSS
+ytd project RUTA    # muestra resumen de un proyecto específico
 ytd open downloads  # abre la carpeta general de descargas
 ```
 

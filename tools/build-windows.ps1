@@ -1,7 +1,7 @@
 $ErrorActionPreference = "Stop"
 
 $AppName = "ytd"
-$AppVersion = "0.2.1"
+$AppVersion = "0.2.2"
 $Target = "windows-x64"
 $PackageName = "$AppName-$AppVersion-$Target"
 $RootDir = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
@@ -54,8 +54,8 @@ function Write-InstallCmd($PayloadDir) {
 setlocal EnableExtensions
 
 set "APP_NAME=ytd"
-set "APP_VERSION=0.2.1"
-set "PACKAGE_NAME=ytd-0.2.1-windows-x64"
+set "APP_VERSION=0.2.2"
+set "PACKAGE_NAME=ytd-0.2.2-windows-x64"
 set "SOURCE_DIR=%~dp0"
 set "INSTALL_ROOT=%LOCALAPPDATA%\OSS"
 set "INSTALL_DIR=%INSTALL_ROOT%\%PACKAGE_NAME%"
@@ -102,7 +102,7 @@ function Write-UninstallCmd($PayloadDir) {
 @echo off
 setlocal EnableExtensions
 
-set "PACKAGE_NAME=ytd-0.2.1-windows-x64"
+set "PACKAGE_NAME=ytd-0.2.2-windows-x64"
 set "INSTALL_ROOT=%LOCALAPPDATA%\OSS"
 set "INSTALL_DIR=%INSTALL_ROOT%\%PACKAGE_NAME%"
 set "BIN_DIR=%LOCALAPPDATA%\OSS\bin"

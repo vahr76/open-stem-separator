@@ -411,6 +411,35 @@ class CoreTests(unittest.TestCase):
             self.assertIn('Artist', output)
             self.assertIn('Song', output)
 
+
+    def test_project_command_prints_last_project_summary(self):
+        with tempfile.TemporaryDirectory() as directory, patch('oss.history_path', return_value=Path(directory) / 'history.jsonl'), patch('builtins.print') as printer:
+            project = oss.create_project('https://example.org/song', directory, {'title': 'Artist - Track', 'webpage_url': 'https://example.org/song'})
+            media_file = project / 'track.flac'
+            media_file.write_bytes(b'audio')
+            oss.register_project_media(project, 'flac', 'shortcut')
+            oss.append_history({'url': 'https://example.org/song', 'profile': 'flac', 'status': 'ok', 'project_dir': str(project)})
+            self.assertEqual(oss.main(['project']), 0)
+            output = '\n'.join(call.args[0] for call in printer.call_args_list)
+            self.assertIn('Proyecto OSS:', output)
+            self.assertIn('Artist', output)
+            self.assertIn('Track', output)
+            self.assertIn('Media: 1', output)
+            self.assertIn('track.flac', output)
+
+    def test_project_command_accepts_path(self):
+        with tempfile.TemporaryDirectory() as directory, patch('builtins.print') as printer:
+            project = oss.create_project('https://example.org/song', directory, {'title': 'Artist - Track'})
+            self.assertEqual(oss.main(['project', str(project)]), 0)
+            output = '\n'.join(call.args[0] for call in printer.call_args_list)
+            self.assertIn(str(project), output)
+            self.assertIn('Media: 0', output)
+
+    def test_project_command_requires_manifest(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with self.assertRaisesRegex(ValueError, 'project.json'):
+                oss.print_project(directory)
+
     def test_open_downloads_uses_default_downloads(self):
         with tempfile.TemporaryDirectory() as directory, patch('oss.default_downloads', return_value=Path(directory)), patch('oss.open_path') as open_path:
             open_path.return_value = 0

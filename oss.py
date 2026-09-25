@@ -176,6 +176,54 @@ def print_last():
     return 0
 
 
+def resolve_project_target(target='last'):
+    if target in (None, '', 'last'):
+        row = last_history_entry()
+        if not row or not row.get('project_dir'):
+            raise ValueError('No hay último proyecto registrado todavía.')
+        return Path(row['project_dir']).expanduser().resolve()
+    return Path(target).expanduser().resolve()
+
+
+def print_project(target='last'):
+    project_dir = resolve_project_target(target)
+    manifest_path = project_dir / 'project.json'
+    manifest = read_json_object(manifest_path)
+    if not manifest:
+        raise ValueError(f'No encontré project.json válido en {project_dir}.')
+    identity = manifest.get('identity') if isinstance(manifest.get('identity'), dict) else {}
+    source = manifest.get('source') if isinstance(manifest.get('source'), dict) else {}
+    media = manifest.get('media') if isinstance(manifest.get('media'), list) else []
+    stems = manifest.get('stems') if isinstance(manifest.get('stems'), list) else []
+    analysis = manifest.get('analysis') if isinstance(manifest.get('analysis'), dict) else {}
+    lyrics = manifest.get('lyrics') if isinstance(manifest.get('lyrics'), dict) else {}
+    print('Proyecto OSS:')
+    print(f'Carpeta: {project_dir}')
+    print(f'Artista: {identity.get("artist", "")}')
+    print(f'Tema: {identity.get("track", "")}')
+    print(f'Confianza: {identity.get("confidence", "")}')
+    print(f'URL: {source.get("webpage_url") or source.get("url") or ""}')
+    print(f'Media: {len(media)}')
+    for item in media:
+        if not isinstance(item, dict):
+            continue
+        parts = [item.get('path', '')]
+        details = []
+        if item.get('kind'):
+            details.append(item['kind'])
+        if item.get('profile'):
+            details.append(item['profile'])
+        if item.get('size') is not None:
+            details.append(f'{item["size"]} bytes')
+        if details:
+            parts.append('(' + ', '.join(str(part) for part in details) + ')')
+        print('  - ' + ' '.join(parts))
+    print(f'Stems: {len(stems)}')
+    print(f'Análisis: {len(analysis)}')
+    print(f'Letras: {len(lyrics)}')
+    return 0
+
+
 def short_time(value):
     if not value:
         return ''
@@ -967,6 +1015,8 @@ def main(argv=None):
     sub.add_parser('doctor', help='Comprobar motores')
     sub.add_parser('config', help='Mostrar configuración activa')
     sub.add_parser('last', help='Mostrar última descarga registrada')
+    project_parser = sub.add_parser('project', help='Mostrar resumen de un proyecto OSS')
+    project_parser.add_argument('target', nargs='?', default='last', help='last o una ruta de proyecto')
     open_parser = sub.add_parser('open', help='Abrir carpeta de descargas o último proyecto')
     open_parser.add_argument('target', nargs='?', default='last', help='last, downloads o una ruta')
     history_parser = sub.add_parser('history', help='Mostrar historial local de descargas')
@@ -999,6 +1049,8 @@ def main(argv=None):
             return print_config()
         if ns.action == 'last':
             return print_last()
+        if ns.action == 'project':
+            return print_project(ns.target)
         if ns.action == 'open':
             return open_target(ns.target)
         if ns.action == 'history':
