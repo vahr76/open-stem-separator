@@ -11,6 +11,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -58,11 +59,23 @@ def make_run_dir(out_root: Path, config_name: str) -> Path:
     return run_dir
 
 
+def engine_python() -> str:
+    override = os.environ.get('OSS_LAB_PYTHON')
+    if override:
+        return override
+    if getattr(sys, 'frozen', False):
+        python = shutil.which('python3') or shutil.which('python')
+        if python:
+            return python
+        raise ValueError('Demucs requires Python. Set OSS_LAB_PYTHON to a Python executable with demucs installed.')
+    return sys.executable
+
+
 def demucs_command(stage: dict, input_path: Path, stage_dir: Path) -> list[str]:
     model = stage.get('model')
     if not model:
         raise ValueError('Demucs stage requires model')
-    command = [sys.executable, '-m', 'demucs', '-n', model, '-o', str(stage_dir / 'stems')]
+    command = [engine_python(), '-m', 'demucs', '-n', model, '-o', str(stage_dir / 'stems')]
     device = stage.get('device')
     if device and device != 'auto':
         command += ['-d', str(device)]

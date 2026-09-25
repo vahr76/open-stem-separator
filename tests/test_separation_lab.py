@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+import unittest.mock
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -59,6 +60,10 @@ class SeparationLabTests(unittest.TestCase):
             self.assertIn('--two-stems', json.loads((run_dir / first['path'] / 'stage.json').read_text(encoding='utf-8'))['command'])
             self.assertIn('stage-01-vocal-instrumental', second_stage['input'])
             self.assertIn('no_vocals.wav', second_stage['input'])
+
+    def test_engine_python_uses_override(self):
+        with unittest.mock.patch.dict('os.environ', {'OSS_LAB_PYTHON': '/custom/python'}):
+            self.assertEqual(separation.engine_python(), '/custom/python')
 
     def test_missing_input_is_rejected_before_run_directory(self):
         with tempfile.TemporaryDirectory() as tmp:
