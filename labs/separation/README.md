@@ -130,6 +130,29 @@ direct htdemucs: -30.49 dB residual vs original
 cascade:        -18.66 dB residual vs original
 ```
 
+
+## Comparing runs audibly
+
+After measuring two runs, create a direct comparison package:
+
+```sh
+python3 labs/separation/tools/compare_runs.py \
+  /path/to/direct-run \
+  /path/to/cascade-run \
+  --label direct \
+  --label cascade \
+  --out /tmp/oss-run-comparison
+```
+
+This writes:
+
+- `COMPARISON.md` with the measurement table;
+- `comparison.rpp` for REAPER;
+- one reconstructed WAV per run, calculated by summing the final stems;
+- links to each residual WAV.
+
+In REAPER, solo the original against each reconstruction, then solo residual tracks. The residual tells you what the summed stems fail to reconstruct. A quieter residual is technically better, but a residual can still contain musically acceptable differences or artifacts that need human judgement.
+
 ## Listening in REAPER
 
 The lab can generate a simple `.rpp` session from any separation run. Each stem is imported as an aligned track starting at zero.
